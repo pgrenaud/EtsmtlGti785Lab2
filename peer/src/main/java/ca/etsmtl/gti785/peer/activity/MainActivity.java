@@ -13,6 +13,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import ca.etsmtl.gti785.peer.fragment.PeersFragment;
 import ca.etsmtl.gti785.peer.fragment.ServerFragment;
 import ca.etsmtl.gti785.peer.R;
 
@@ -21,6 +22,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private FloatingActionButton fab;
     private MenuItem previousMenuItem;
 
+    private PeersFragment peersFragment;
     private ServerFragment serverFragment;
 
     private int nextPeerId = Menu.FIRST;
@@ -56,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         navigationView.setNavigationItemSelectedListener(this);
 
         // Initializing fixed fragments
+        peersFragment = PeersFragment.newInstance();
         serverFragment = ServerFragment.newInstance();
 
         // Perform initial setup by triggering a navigation change
@@ -110,6 +113,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (id == R.id.nav_peers) {
             setTitle(R.string.activity_peers_title);
             fab.show();
+
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, peersFragment).commit();
         } else if (id == R.id.nav_status) {
             setTitle(R.string.activity_status_title);
             fab.hide();
