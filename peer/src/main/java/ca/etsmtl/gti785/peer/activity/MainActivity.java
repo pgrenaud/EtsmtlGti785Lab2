@@ -13,6 +13,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import ca.etsmtl.gti785.peer.fragment.FilesFragment;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment;
 import ca.etsmtl.gti785.peer.fragment.ServerFragment;
 import ca.etsmtl.gti785.peer.R;
@@ -24,6 +25,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private PeersFragment peersFragment;
     private ServerFragment serverFragment;
+    private FilesFragment filesFragment;
 
     private int nextPeerId = Menu.FIRST;
 
@@ -60,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Initializing fixed fragments
         peersFragment = PeersFragment.newInstance();
         serverFragment = ServerFragment.newInstance();
+        filesFragment = FilesFragment.newInstance();
 
         // Perform initial setup by triggering a navigation change
         onNavigationItemSelected(navigationView.getMenu().findItem(R.id.nav_peers));
@@ -123,6 +126,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else if (id == R.id.nav_files) {
             setTitle(R.string.activity_files_title);
             fab.hide();
+
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, filesFragment).commit();
         } else {
             setTitle(item.getTitle());
             fab.hide();
