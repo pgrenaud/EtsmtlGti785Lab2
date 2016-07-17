@@ -2,7 +2,7 @@ package ca.etsmtl.gti785.peer.activity;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -15,8 +15,12 @@ import android.view.MenuItem;
 
 import ca.etsmtl.gti785.peer.R;
 
-public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+
+    private FloatingActionButton fab;
+    private MenuItem previousMenuItem;
+
+    private int nextPeerId = Menu.FIRST;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,23 +29,31 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+
+                SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+
+                MenuItem item = submenu.add(Menu.NONE, nextPeerId, Menu.NONE, "Peer " + nextPeerId);
+                item.setIcon(R.drawable.ic_phone_android_black_24dp);
+
+                nextPeerId++;
             }
         });
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
         toggle.syncState();
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        // Perform initial setup by triggering a navigation change
+        onNavigationItemSelected(navigationView.getMenu().findItem(R.id.nav_peers));
     }
 
     @Override
@@ -79,25 +91,34 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
+        item.setCheckable(true);
+        item.setChecked(true);
+
+        if (previousMenuItem != null) {
+            previousMenuItem.setChecked(false);
+        }
+        previousMenuItem = item;
+
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        if (id == R.id.nav_peers) {
+            setTitle(R.string.activity_peers_title);
+            fab.show();
+        } else if (id == R.id.nav_status) {
+            setTitle(R.string.activity_status_title);
+            fab.hide();
+        } else if (id == R.id.nav_files) {
+            setTitle(R.string.activity_files_title);
+            fab.hide();
+        } else {
+            setTitle(item.getTitle());
+            fab.hide();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
+
         return true;
     }
 }

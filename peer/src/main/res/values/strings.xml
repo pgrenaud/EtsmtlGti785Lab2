@@ -1,8 +1,17 @@
 <resources>
-    <string name="app_name">EtsmtlGti785Lab2</string>
+    <string name="app_name">Orange Peering</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_settings">Settings</string>
+
+    <string name="activity_peers_title">Peers</string>
+    <string name="activity_status_title">Local Server</string>
+    <string name="activity_files_title">Files</string>
+
+    <string name="nav_peers_title">Peers list</string>
+    <string name="nav_status_title">Local server</string>
+    <string name="nav_files_title">Files list</string>
+    <string name="nav_peers_submenu_title">Connected Peers</string>
 </resources>
