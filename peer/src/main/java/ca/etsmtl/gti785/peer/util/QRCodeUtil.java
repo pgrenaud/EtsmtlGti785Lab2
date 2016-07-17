@@ -19,7 +19,6 @@ public class QRCodeUtil {
 
     private static final int QR_WIDTH = 300;
     private static final int QR_HEIGHT = 300;
-    private static final int QR_BACKGROUND_COLOR = Color.parseColor("#FAFAFA"); // Android background color (grey-50)
 
     public static Bitmap generateBitmap(String contents) {
         Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
@@ -37,7 +36,7 @@ public class QRCodeUtil {
 
             for (int i = 0; i < w; i++) {
                 for (int j = 0; j < h; j++) {
-                    bitmap.setPixel(i, j, matrix.get(i, j) ? Color.BLACK : QR_BACKGROUND_COLOR);
+                    bitmap.setPixel(i, j, matrix.get(i, j) ? Color.BLACK : Color.TRANSPARENT);
                 }
             }
 
