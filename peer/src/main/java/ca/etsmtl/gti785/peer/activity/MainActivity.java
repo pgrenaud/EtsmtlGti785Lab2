@@ -13,12 +13,15 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import ca.etsmtl.gti785.peer.fragment.ServerFragment;
 import ca.etsmtl.gti785.peer.R;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private FloatingActionButton fab;
     private MenuItem previousMenuItem;
+
+    private ServerFragment serverFragment;
 
     private int nextPeerId = Menu.FIRST;
 
@@ -51,6 +54,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        // Initializing fixed fragments
+        serverFragment = ServerFragment.newInstance();
 
         // Perform initial setup by triggering a navigation change
         onNavigationItemSelected(navigationView.getMenu().findItem(R.id.nav_peers));
@@ -88,7 +94,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         item.setCheckable(true);
@@ -108,6 +113,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else if (id == R.id.nav_status) {
             setTitle(R.string.activity_status_title);
             fab.hide();
+
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, serverFragment).commit();
         } else if (id == R.id.nav_files) {
             setTitle(R.string.activity_files_title);
             fab.hide();
