@@ -1,8 +1,10 @@
 package ca.etsmtl.gti785.peer.fragment;
 
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -10,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.util.QRCodeUtil;
@@ -24,6 +27,8 @@ public class ServerFragment extends Fragment {
     private String mParam1;
     private String mParam2;
 
+    private TextView nameText;
+    private TextView statusText;
     private ImageView qrImage;
     private Bitmap qrBitmap;
 
@@ -65,7 +70,11 @@ public class ServerFragment extends Fragment {
         View view = getView();
 
         if (view != null) {
+            nameText = (TextView) getView().findViewById(R.id.server_name_text);
+            statusText = (TextView) getView().findViewById(R.id.server_status_text);
             qrImage = (ImageView) getView().findViewById(R.id.server_qr_image);
+
+            reloadStatus();
 
             if (qrBitmap != null) {
                 qrImage.setImageBitmap(qrBitmap);
@@ -81,6 +90,16 @@ public class ServerFragment extends Fragment {
 
         // TODO: Clear all UI references
         qrImage = null;
+    }
+
+    public void reloadStatus() {
+        // TODO: Invalidate bitmap and redraw
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String name = prefs.getString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
+
+        nameText.setText(getString(R.string.server_peer_name, name));
+        statusText.setText(getString(R.string.server_peer_status, "192.168.0.123", "8099")); // TODO: Bind values
     }
 
     // See: https://developer.android.com/training/displaying-bitmaps/cache-bitmap.html

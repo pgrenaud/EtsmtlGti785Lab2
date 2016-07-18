@@ -24,6 +24,7 @@ import ca.etsmtl.gti785.peer.fragment.FilesFragment;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment;
 import ca.etsmtl.gti785.peer.fragment.ServerFragment;
 import ca.etsmtl.gti785.peer.R;
+import ca.etsmtl.gti785.peer.util.EditTextPreferenceDialog;
 import ca.etsmtl.gti785.peer.util.UriUtil;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -31,7 +32,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static final int DIRECTORY_REQUEST_CODE = 123;
 
     private RelativeLayout contentLayout;
-    private FloatingActionButton fab;
+    private FloatingActionButton addFab;
+    private FloatingActionButton editFab;
     private MenuItem previousMenuItem;
 
     private PeersFragment peersFragment;
@@ -50,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String serverDirectory = prefs.getString(getString(R.string.pref_server_directory_key), null);
+        String serverName = prefs.getString(getString(R.string.pref_server_name_key), null);
 
         if (serverDirectory == null) {
             SharedPreferences.Editor editor = prefs.edit();
@@ -57,11 +60,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             editor.apply();
         }
 
+        if (serverName == null) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
+            editor.apply();
+        }
+
         // Used for displaying Snackbar
         contentLayout = (RelativeLayout) findViewById(R.id.main_content_layout);
 
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        addFab = (FloatingActionButton) findViewById(R.id.add_fab);
+        addFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
@@ -72,6 +81,23 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 item.setIcon(R.drawable.ic_phone_android_black_24dp);
 
                 nextPeerId++;
+            }
+        });
+
+        editFab = (FloatingActionButton) findViewById(R.id.edit_fab);
+        editFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                EditTextPreferenceDialog dialog = new EditTextPreferenceDialog(getActivity(),
+                        R.string.pref_server_name_key, R.string.pref_server_name_default);
+
+                dialog.setListener(new EditTextPreferenceDialog.OnValueChangeListener() {
+                    @Override
+                    public void onValueChange(String value) {
+                        serverFragment.reloadStatus();
+                    }
+                });
+                dialog.showDialog();
             }
         });
 
@@ -148,25 +174,29 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (id == R.id.nav_peers) {
             setTitle(R.string.activity_peers_title);
             setActionDirectoryVisible(false);
-            fab.show();
+            editFab.hide();
+            addFab.show();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, peersFragment).commit();
         } else if (id == R.id.nav_status) {
             setTitle(R.string.activity_status_title);
             setActionDirectoryVisible(false);
-            fab.hide();
+            addFab.hide();
+            editFab.show();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, serverFragment).commit();
         } else if (id == R.id.nav_files) {
             setTitle(R.string.activity_files_title);
             setActionDirectoryVisible(true);
-            fab.hide();
+            addFab.hide();
+            editFab.hide();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, filesFragment).commit();
         } else {
             setTitle(item.getTitle());
             setActionDirectoryVisible(false);
-            fab.hide();
+            addFab.hide();
+            editFab.hide();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
