@@ -10,14 +10,15 @@ import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.dummy.DummyContent.DummyItem;
 import ca.etsmtl.gti785.peer.fragment.FilesFragment;
 
+import java.io.File;
 import java.util.List;
 
 public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecyclerViewAdapter.ViewHolder> {
 
-    private final List<DummyItem> files;
+    private final List<File> files;
     private final FilesFragment.OnListFragmentInteractionListener listener;
 
-    public FilesRecyclerViewAdapter(List<DummyItem> files, FilesFragment.OnListFragmentInteractionListener listener) {
+    public FilesRecyclerViewAdapter(List<File> files, FilesFragment.OnListFragmentInteractionListener listener) {
         this.files = files;
         this.listener = listener;
     }
@@ -32,7 +33,8 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.file = files.get(position);
-        holder.nameText.setText(files.get(position).content);
+        holder.nameText.setText(files.get(position).getName());
+        holder.sizeText.setText(Long.toString(files.get(position).length()));
 
         holder.fileView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -56,7 +58,7 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
         public final TextView nameText;
         public final TextView sizeText;
 
-        public DummyItem file;
+        public File file;
 
         public ViewHolder(View view) {
             super(view);

@@ -1,7 +1,13 @@
 package ca.etsmtl.gti785.peer.activity;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -12,14 +18,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.RelativeLayout;
 
 import ca.etsmtl.gti785.peer.fragment.FilesFragment;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment;
 import ca.etsmtl.gti785.peer.fragment.ServerFragment;
 import ca.etsmtl.gti785.peer.R;
+import ca.etsmtl.gti785.peer.util.UriUtil;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
+    private static final int DIRECTORY_REQUEST_CODE = 123;
+
+    private RelativeLayout contentLayout;
     private FloatingActionButton fab;
     private MenuItem previousMenuItem;
 
@@ -27,6 +38,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private ServerFragment serverFragment;
     private FilesFragment filesFragment;
 
+    private boolean actionDirectoryVisible = false;
     private int nextPeerId = Menu.FIRST;
 
     @Override
@@ -35,6 +47,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String serverDirectory = prefs.getString(getString(R.string.pref_server_directory_key), null);
+
+        if (serverDirectory == null) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString(getString(R.string.pref_server_directory_key), Environment.getExternalStorageDirectory().getPath());
+            editor.apply();
+        }
+
+        // Used for displaying Snackbar
+        contentLayout = (RelativeLayout) findViewById(R.id.main_content_layout);
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -82,6 +106,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
+
+        menu.findItem(R.id.action_directory).setVisible(actionDirectoryVisible);
+
         return true;
     }
 
@@ -94,6 +121,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            return true;
+        } else if (id == R.id.action_directory) {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            startActivityForResult(intent, DIRECTORY_REQUEST_CODE);
+
             return true;
         }
 
@@ -115,21 +147,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         if (id == R.id.nav_peers) {
             setTitle(R.string.activity_peers_title);
+            setActionDirectoryVisible(false);
             fab.show();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, peersFragment).commit();
         } else if (id == R.id.nav_status) {
             setTitle(R.string.activity_status_title);
+            setActionDirectoryVisible(false);
             fab.hide();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, serverFragment).commit();
         } else if (id == R.id.nav_files) {
             setTitle(R.string.activity_files_title);
+            setActionDirectoryVisible(true);
             fab.hide();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, filesFragment).commit();
         } else {
             setTitle(item.getTitle());
+            setActionDirectoryVisible(false);
             fab.hide();
         }
 
@@ -137,5 +173,37 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.closeDrawer(GravityCompat.START);
 
         return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == DIRECTORY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            if (data != null) {
+                String path = UriUtil.getDocumentPath(getActivity(), data.getData());
+
+                if (path == null) {
+                    Snackbar.make(contentLayout, R.string.snackbar_directory_error, Snackbar.LENGTH_LONG).show();
+                } else {
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putString(getString(R.string.pref_server_directory_key), path);
+                    editor.apply();
+
+                    filesFragment.reloadFiles();
+                }
+            }
+        }
+    }
+
+    public Activity getActivity() {
+        return this;
+    }
+
+    public void setActionDirectoryVisible(boolean actionDirectoryVisible) {
+        this.actionDirectoryVisible = actionDirectoryVisible;
+
+        invalidateOptionsMenu();
     }
 }

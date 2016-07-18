@@ -1,7 +1,10 @@
 package ca.etsmtl.gti785.peer.fragment;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -9,10 +12,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import ca.etsmtl.gti785.peer.adapter.FilesRecyclerViewAdapter;
 import ca.etsmtl.gti785.peer.R;
-import ca.etsmtl.gti785.peer.dummy.DummyContent;
-import ca.etsmtl.gti785.peer.dummy.DummyContent.DummyItem;
 import ca.etsmtl.gti785.peer.util.DividerItemDecoration;
 
 public class FilesFragment extends Fragment {
@@ -23,6 +28,9 @@ public class FilesFragment extends Fragment {
     private int mColumnCount = 1;
 
     private OnListFragmentInteractionListener listener;
+
+    private List<File> files;
+    private FilesRecyclerViewAdapter adapter;
 
 //    public FilesFragment() {
 //    }
@@ -45,6 +53,12 @@ public class FilesFragment extends Fragment {
 //        if (getArguments() != null) {
 //            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
 //        }
+
+        files = new ArrayList<>();
+
+        adapter = new FilesRecyclerViewAdapter(files, listener);
+
+        reloadFiles();
     }
 
     @Override
@@ -57,13 +71,32 @@ public class FilesFragment extends Fragment {
             RecyclerView recyclerView = (RecyclerView) view;
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.addItemDecoration(new DividerItemDecoration(context));
-            recyclerView.setAdapter(new FilesRecyclerViewAdapter(DummyContent.ITEMS, listener));
+            recyclerView.setAdapter(adapter);
         }
 
         return view;
     }
 
+    public void reloadFiles() {
+        // TODO: Use arguments to get path from activity
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String path = prefs.getString(getString(R.string.pref_server_directory_key), Environment.getExternalStorageDirectory().getPath());
 
+        File f = new File(path);
+        File[] files = f.listFiles();
+
+        this.files.clear();
+
+        for (File file : files) {
+            if (file.isFile()) {
+                this.files.add(file);
+            }
+        }
+
+        adapter.notifyDataSetChanged();
+    }
+
+    // TODO: Use this to get the MainActivity instance and access fields/methods (and also send event)
 //    @Override
 //    public void onAttach(Context context) {
 //        super.onAttach(context);
@@ -93,6 +126,6 @@ public class FilesFragment extends Fragment {
      */
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(DummyItem item);
+        void onListFragmentInteraction(File file);
     }
 }
