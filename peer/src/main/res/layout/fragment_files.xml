@@ -17,7 +17,7 @@
             android:id="@+id/files_name_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Subhead"
             android:text="Item 123"/>
 
         <TextView

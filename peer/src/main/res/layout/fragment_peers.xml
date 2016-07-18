@@ -27,7 +27,7 @@
             android:layout_toEndOf="@+id/peers_status_image"
             android:layout_toStartOf="@+id/peers_distance_text"
             android:layout_marginStart="8dp"
-            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Subhead"
             android:text="Item 123"/>
 
         <TextView
