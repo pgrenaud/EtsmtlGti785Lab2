@@ -23,6 +23,7 @@ import android.widget.RelativeLayout;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
+import ca.etsmtl.gti785.lib.service.PeerService;
 import ca.etsmtl.gti785.peer.fragment.FilesFragment;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment;
 import ca.etsmtl.gti785.peer.fragment.ServerFragment;
@@ -106,6 +107,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        Intent intent = new Intent(this, PeerService.class);
+        startService(intent);
+
         // Initializing fixed fragments
         peersFragment = PeersFragment.newInstance();
         serverFragment = ServerFragment.newInstance();
@@ -113,6 +117,24 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         // Perform initial setup by triggering a navigation change
         onNavigationItemSelected(navigationView.getMenu().findItem(R.id.nav_peers));
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        Intent intent = new Intent(this, PeerService.class);
+        stopService(intent);
     }
 
     @Override

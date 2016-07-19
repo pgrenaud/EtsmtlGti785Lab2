@@ -1,18 +1,24 @@
 package ca.etsmtl.gti785.peer.fragment;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import java.net.InetAddress;
 
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.util.QRCodeUtil;
@@ -98,8 +104,15 @@ public class ServerFragment extends Fragment {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String name = prefs.getString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
 
+        WifiManager wifiMgr = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
+        int ip = wifiInfo.getIpAddress();
+        String serverAddr = Formatter.formatIpAddress(ip);
+
+//        InetAddress myInetIP = InetAddress.getByAddress(myIPAddress);
+
         nameText.setText(getString(R.string.server_peer_name, name));
-        statusText.setText(getString(R.string.server_peer_status, "192.168.0.123", "8099")); // TODO: Bind values
+        statusText.setText(getString(R.string.server_peer_status, serverAddr, "8099")); // TODO: Bind values
     }
 
     // See: https://developer.android.com/training/displaying-bitmaps/cache-bitmap.html

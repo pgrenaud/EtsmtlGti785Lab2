@@ -1,1 +1,1 @@
-include ':peer'
+include ':app', ':peer', ':lib'

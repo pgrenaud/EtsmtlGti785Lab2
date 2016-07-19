@@ -11,9 +11,9 @@
     <string name="activity_status_title">Local Server</string>
     <string name="activity_files_title">Files</string>
 
-    <string name="nav_peers_title">Peers list</string>
+    <string name="nav_peers_title">Peer list</string>
     <string name="nav_status_title">Local server</string>
-    <string name="nav_files_title">Files list</string>
+    <string name="nav_files_title">File list</string>
     <string name="nav_peers_submenu_title">Connected Peers</string>
 
     <string name="pref_server_directory_key">server_directory</string>
