@@ -20,6 +20,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.RelativeLayout;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
 import ca.etsmtl.gti785.peer.fragment.FilesFragment;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment;
 import ca.etsmtl.gti785.peer.fragment.ServerFragment;
@@ -73,14 +76,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         addFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-
-                SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
-
-                MenuItem item = submenu.add(Menu.NONE, nextPeerId, Menu.NONE, "Peer " + nextPeerId);
-                item.setIcon(R.drawable.ic_phone_android_black_24dp);
-
-                nextPeerId++;
+                IntentIntegrator integrator = new IntentIntegrator(getActivity());
+                integrator.initiateScan(IntentIntegrator.QR_CODE_TYPES);
             }
         });
 
@@ -224,6 +221,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     filesFragment.reloadFiles();
                 }
             }
+        } else if (requestCode == IntentIntegrator.REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+
+//            scanResult.getContents() // TODO
+
+            NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+
+            SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+
+            MenuItem item = submenu.add(Menu.NONE, nextPeerId, Menu.NONE, "Peer " + nextPeerId);
+            item.setIcon(R.drawable.ic_phone_android_black_24dp);
+
+            nextPeerId++;
         }
     }
 
