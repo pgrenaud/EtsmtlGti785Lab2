@@ -24,7 +24,7 @@ public class QRCodeUtil {
         Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
 //        hints.put(EncodeHintType.MARGIN, DEFAULT_MARGIN);
         hints.put(EncodeHintType.CHARACTER_SET, StandardCharsets.UTF_8.name());
-        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.Q);
 
         try {
             BitMatrix matrix = new QRCodeWriter().encode(contents, BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT, hints);

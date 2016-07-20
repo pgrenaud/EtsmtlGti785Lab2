@@ -20,13 +20,17 @@
     <string name="pref_server_name_key">server_name</string>
 
     <string name="pref_server_name_title">Peer name</string>
-    <string name="pref_server_name_default">Default peer</string>
+    <string name="pref_server_name_default">Default peer name</string>
 
     <string name="snackbar_directory_error">Could not open directory</string>
+    <string name="snackbar_peer_error">Invalid QR code, could not load peer</string>
+    <string name="snackbar_service_error">Peer service is not available</string>
 
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
 
     <string name="server_peer_name">Peer is known as %s.</string>
     <string name="server_peer_status">Server listening on %1$s:%2$s.</string>
+
+
 </resources>

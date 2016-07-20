@@ -9,10 +9,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import ca.etsmtl.gti785.lib.entity.PeerEntity;
+import ca.etsmtl.gti785.lib.repository.PeerRepository;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.adapter.PeersRecyclerViewAdapter;
-import ca.etsmtl.gti785.peer.dummy.DummyContent;
-import ca.etsmtl.gti785.peer.dummy.DummyContent.DummyItem;
 import ca.etsmtl.gti785.peer.util.DividerItemDecoration;
 
 public class PeersFragment extends Fragment {
@@ -23,6 +27,9 @@ public class PeersFragment extends Fragment {
     private int mColumnCount = 1;
 
     private OnListFragmentInteractionListener listener;
+
+    private List<PeerEntity> peers = new ArrayList<>();
+    private PeersRecyclerViewAdapter adapter;
 
 //    public PeersFragment() {
 //    }
@@ -45,6 +52,8 @@ public class PeersFragment extends Fragment {
 //        if (getArguments() != null) {
 //            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
 //        }
+
+        adapter = new PeersRecyclerViewAdapter(peers, listener);
     }
 
     @Override
@@ -58,10 +67,21 @@ public class PeersFragment extends Fragment {
             RecyclerView recyclerView = (RecyclerView) view;
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.addItemDecoration(new DividerItemDecoration(context));
-            recyclerView.setAdapter(new PeersRecyclerViewAdapter(DummyContent.ITEMS, listener));
+            recyclerView.setAdapter(adapter);
         }
 
         return view;
+    }
+
+    public void updateDataSet(PeerRepository peerRepository) {
+        peers.clear();
+        peers.addAll(peerRepository.getAll());
+
+        Collections.sort(peers);
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
 
@@ -84,6 +104,6 @@ public class PeersFragment extends Fragment {
 
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(DummyItem item);
+//        void onListFragmentInteraction(DummyItem item);
     }
 }

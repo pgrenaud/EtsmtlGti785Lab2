@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -21,6 +20,7 @@ import java.util.regex.Pattern;
 import ca.etsmtl.gti785.lib.handler.RequestHandler;
 import fi.iki.elonen.NanoHTTPD;
 
+// TODO: Split this class into two, one for base methods and the other for routing
 public class WebServer extends NanoHTTPD {
 
     public static final String MIME_JSON = "application/json";
@@ -53,6 +53,8 @@ public class WebServer extends NanoHTTPD {
                 return sendEmpty();
             } else if (URI.equals("/api/v1/timeout")) {
                 return sendTimeout();
+            } else if (URI.equals("/api/v1/ping")) {
+                return handlePing(session);
             } else if (URI.startsWith("/api/v1/polling") && PEER_POLLING_URL_PATTERN.matcher(URI).matches()) {
                 return handlePolling(session);
             } else if (URI.equals("/api/v1/files")) {
@@ -99,6 +101,10 @@ public class WebServer extends NanoHTTPD {
 //
 //        return commandHandler.handle(command);
 //    }
+
+    private Response handlePing(IHTTPSession session) {
+        return sendOk("pong");
+    }
 
     private Response handlePolling(IHTTPSession session) {
         String param = getRouteParam(session, PEER_POLLING_URL_PATTERN, 1);

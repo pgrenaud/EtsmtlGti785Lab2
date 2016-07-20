@@ -14,8 +14,13 @@ import android.view.ViewGroup;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import ca.etsmtl.gti785.lib.entity.FileEntity;
+import ca.etsmtl.gti785.lib.repository.FileRepository;
+import ca.etsmtl.gti785.lib.service.PeerService;
+import ca.etsmtl.gti785.peer.activity.MainActivity;
 import ca.etsmtl.gti785.peer.adapter.FilesRecyclerViewAdapter;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.util.DividerItemDecoration;
@@ -27,9 +32,9 @@ public class FilesFragment extends Fragment {
     // TODO: Customize parameters
     private int mColumnCount = 1;
 
-    private OnListFragmentInteractionListener listener;
+    private FilesFragmentListener listener;
 
-    private List<File> files;
+    private List<FileEntity> files = new ArrayList<>();
     private FilesRecyclerViewAdapter adapter;
 
 //    public FilesFragment() {
@@ -46,6 +51,18 @@ public class FilesFragment extends Fragment {
         return fragment;
     }
 
+    // TODO: Use this to get the MainActivity instance and access fields/methods (and also send event)
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (context instanceof FilesFragmentListener) {
+            listener = (FilesFragmentListener) context;
+        } else {
+            throw new RuntimeException(context.toString() + " must implement FilesFragmentListener.");
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,11 +71,9 @@ public class FilesFragment extends Fragment {
 //            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
 //        }
 
-        files = new ArrayList<>();
+        adapter = new FilesRecyclerViewAdapter(getContext(), files, listener);
 
-        adapter = new FilesRecyclerViewAdapter(files, listener);
-
-        reloadFiles();
+//        reloadFiles();
     }
 
     @Override
@@ -77,41 +92,40 @@ public class FilesFragment extends Fragment {
         return view;
     }
 
-    public void reloadFiles() {
-        // TODO: Use arguments to get path from activity
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String path = prefs.getString(getString(R.string.pref_server_directory_key), Environment.getExternalStorageDirectory().getPath());
-
-        File f = new File(path);
-        File[] files = f.listFiles();
-
-        this.files.clear();
-
-        for (File file : files) {
-            if (file.isFile()) {
-                this.files.add(file);
-            }
-        }
-
-        adapter.notifyDataSetChanged();
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        listener = null;
     }
 
-    // TODO: Use this to get the MainActivity instance and access fields/methods (and also send event)
-//    @Override
-//    public void onAttach(Context context) {
-//        super.onAttach(context);
-//        if (context instanceof OnListFragmentInteractionListener) {
-//            listener = (OnListFragmentInteractionListener) context;
-//        } else {
-//            throw new RuntimeException(context.toString()
-//                    + " must implement OnListFragmentInteractionListener");
-//        }
-//    }
+    public void updateDataSet(FileRepository fileRepository) {
+        files.clear();
+        files.addAll(fileRepository.getAll());
 
-//    @Override
-//    public void onDetach() {
-//        super.onDetach();
-//        listener = null;
+        Collections.sort(files);
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+//    public void reloadFiles() {
+//        // TODO: Use arguments to get path from activity
+//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+//        String path = prefs.getString(getString(R.string.pref_server_directory_key), Environment.getExternalStorageDirectory().getPath());
+//
+//        File f = new File(path);
+//        File[] files = f.listFiles();
+//
+//        this.files.clear();
+//
+//        for (File file : files) {
+//            if (file.isFile()) {
+//                this.files.add(file);
+//            }
+//        }
+//
+//        adapter.notifyDataSetChanged();
 //    }
 
     /**
@@ -124,8 +138,10 @@ public class FilesFragment extends Fragment {
      * "http://developer.android.com/training/basics/fragments/communicating.html"
      * >Communicating with Other Fragments</a> for more information.
      */
-    public interface OnListFragmentInteractionListener {
+    public interface FilesFragmentListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(File file);
+//        void onListFragmentInteraction(File file);
+//        void onFileRepositoryUpdate(FileRepository fileRepository);
+        PeerService getPeerService();
     }
 }

@@ -25,10 +25,9 @@ public class RequestHandler {
     private final QueueRepository queueRepository;
     private final FileRepository fileRepository;
 
-    public RequestHandler(FileRepository fileRepository) {
+    public RequestHandler(QueueRepository queueRepository, FileRepository fileRepository) {
+        this.queueRepository = queueRepository;
         this.fileRepository = fileRepository;
-
-        queueRepository = new QueueRepository(); // FIXME
     }
 
     public Response handlePolling(UUID uuid) {

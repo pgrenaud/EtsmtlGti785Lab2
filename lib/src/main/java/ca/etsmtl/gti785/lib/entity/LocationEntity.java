@@ -2,8 +2,12 @@ package ca.etsmtl.gti785.lib.entity;
 
 import android.location.Location;
 
+import com.google.gson.annotations.SerializedName;
+
 public class LocationEntity {
+    @SerializedName("lat")
     private Double latitude;
+    @SerializedName("lng")
     private Double longitude;
 
     public LocationEntity() {

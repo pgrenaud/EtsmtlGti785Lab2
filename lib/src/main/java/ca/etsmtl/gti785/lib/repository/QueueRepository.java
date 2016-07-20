@@ -1,5 +1,7 @@
 package ca.etsmtl.gti785.lib.repository;
 
+import android.util.Log;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +37,16 @@ public class QueueRepository {
 
     public void add(UUID uuid, BlockingQueue<Object> queue) {
         queues.put(uuid, queue);
+    }
+
+    public void putAll(Object event) {
+        for (BlockingQueue<Object> queue : queues.values()) {
+            try {
+                queue.put(event);
+            } catch (InterruptedException e) {
+                Log.e("QueueRepository", "Exception occurred while appending event to queue", e);
+            }
+        }
     }
 
     public void remove(UUID uuid) {

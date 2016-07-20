@@ -15,7 +15,6 @@ public class PeerRepository {
         peers = new ConcurrentHashMap<>();
     }
 
-
     public PeerEntity get(UUID uuid) {
         return peers.get(uuid);
     }
@@ -25,11 +24,30 @@ public class PeerRepository {
     }
 
     public void add(PeerEntity peer) {
-        peers.put(peer.getUuid(), peer);
+        peers.put(peer.getUUID(), peer);
+    }
+
+    /**
+     *
+     * @param peer
+     * @return Returns true if the PeerEntity was added to the repository or false if it was updated.
+     */
+    public boolean addOrUpdate(PeerEntity peer) {
+        PeerEntity localPeer = peers.get(peer.getUUID());
+
+        if (localPeer == null) {
+            peers.put(peer.getUUID(), peer);
+
+            return true;
+        } else {
+            localPeer.setDisplayName(peer.getDisplayName());
+
+            return false;
+        }
     }
 
     public void remove(PeerEntity peer) {
-        peers.remove(peer.getUuid());
+        peers.remove(peer.getUUID());
     }
 
     public void removeAll() {

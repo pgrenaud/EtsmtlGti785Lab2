@@ -1,9 +1,14 @@
 package ca.etsmtl.gti785.lib.entity;
 
+import android.support.annotation.NonNull;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+
 import java.io.File;
 import java.util.UUID;
 
-public class FileEntity {
+public class FileEntity implements Comparable<FileEntity> {
 
     // Do not serialize file
     private transient File file;
@@ -52,5 +57,22 @@ public class FileEntity {
      */
     public Long getSize() {
         return size;
+    }
+
+    @Override
+    public int compareTo(@NonNull FileEntity fileEntity) {
+        return getName().compareTo(fileEntity.getName());
+    }
+
+    public String encode() {
+        Gson gson = new Gson();
+
+        return gson.toJson(this);
+    }
+
+    public static FileEntity decode(String json) throws JsonSyntaxException {
+        Gson gson = new Gson();
+
+        return gson.fromJson(json, FileEntity.class);
     }
 }

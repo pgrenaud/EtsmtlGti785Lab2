@@ -11,19 +11,33 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import ca.etsmtl.gti785.lib.R;
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
+import ca.etsmtl.gti785.lib.handler.PeerHive;
 import ca.etsmtl.gti785.lib.handler.RequestHandler;
 import ca.etsmtl.gti785.lib.repository.FileRepository;
+import ca.etsmtl.gti785.lib.repository.PeerRepository;
+import ca.etsmtl.gti785.lib.repository.QueueRepository;
 import ca.etsmtl.gti785.lib.web.WebServer;
 
 public class PeerService extends Service {
 
-    private final IBinder binder = new PeerServiceBinder();
+    public static final String EXTRA_DIRECTORY_PATH = "ca.etsmtl.gti785.lib.service.EXTRA_DIRECTORY_PATH"; // FIXME: Fix package
+    public static final String EXTRA_SERVER_PORT = "ca.etsmtl.gti785.lib.service.EXTRA_SERVER_PORT"; // FIXME: Fix package
 
-    private WebServer server;
+    public static final int DEFAULT_SERVER_PORT = 8099;
+
+    private final IBinder binder = new PeerServiceBinder();
+    private final QueueRepository queueRepository = new QueueRepository();
+    private final FileRepository fileRepository = new FileRepository();
+    private final PeerRepository peerRepository = new PeerRepository();
+    private final PeerHive peerHive = new PeerHive(this, peerRepository);
+
     private PeerServiceListener listener;
+    private WebServer server;
+    private int serverPort;
 
     private boolean running = false;
 
@@ -36,22 +50,28 @@ public class PeerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("SimpleService", "onStartCommand");
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getService());
-        String path = prefs.getString("server_directory", Environment.getExternalStorageDirectory().getPath()); // FIXME: Get from intent
-
-        FileRepository fileRepository = new FileRepository();
-        fileRepository.addAll(path);
-
-        RequestHandler requestHandler = new RequestHandler(fileRepository);
-
-        server = new WebServer(8099, requestHandler);
-
         // Skip initialization if already running
         if (!running) {
+//            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getService());
+//            String path = prefs.getString("server_directory", Environment.getExternalStorageDirectory().getPath()); // FIXME: Get from intent
+
+            String path = intent.getStringExtra(EXTRA_DIRECTORY_PATH);
+            if (path != null) {
+                fileRepository.addAll(path);
+            }
+
+            serverPort = intent.getIntExtra(EXTRA_SERVER_PORT, DEFAULT_SERVER_PORT);
+
+            // TODO: Load peers from persistent storage
+
+            RequestHandler requestHandler = new RequestHandler(queueRepository, fileRepository);
+
+            server = new WebServer(serverPort, requestHandler);
+
             try {
                 server.start();
             } catch (IOException e) {
-                Log.d("PeerService", "start server failed", e);
+                Log.e("PeerService", "start server failed", e); // TODO: Send error to client
             }
 
             running = true;
@@ -66,6 +86,9 @@ public class PeerService extends Service {
         Log.d("SimpleService", "onBind");
 
         // FIXME: Throw exception if the service is not running
+        if (!running) {
+            throw new IllegalStateException("Service must be started before it can be bonded.");
+        }
 
 //        new Timer().schedule(
 //                new TimerTask() {
@@ -102,6 +125,9 @@ public class PeerService extends Service {
         Log.e("SimpleService", "onDestroy");
 
         if (running) {
+            // TODO: Save peers to persistent storage
+
+            peerHive.stop();
             server.stop();
         }
     }
@@ -112,6 +138,26 @@ public class PeerService extends Service {
 
     public void setListener(PeerServiceListener listener) {
         this.listener = listener;
+    }
+
+    public QueueRepository getQueueRepository() {
+        return queueRepository;
+    }
+
+    public FileRepository getFileRepository() {
+        return fileRepository;
+    }
+
+    public PeerRepository getPeerRepository() {
+        return peerRepository;
+    }
+
+    public PeerHive getPeerHive() {
+        return peerHive;
+    }
+
+    public int getServerPort() {
+        return serverPort;
     }
 
     public Service getService() {
