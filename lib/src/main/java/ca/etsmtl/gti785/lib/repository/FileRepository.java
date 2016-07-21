@@ -1,6 +1,11 @@
 package ca.etsmtl.gti785.lib.repository;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
+
 import java.io.File;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -45,5 +50,18 @@ public class FileRepository {
 
     public void removeAll() {
         files.clear();
+    }
+
+    public String encode() {
+        Gson gson = new Gson();
+
+        return gson.toJson(getAll());
+    }
+
+    public static Collection<FileEntity> decode(String json) throws JsonSyntaxException {
+        Gson gson = new Gson();
+        Type type = new TypeToken<Collection<FileEntity>>(){}.getType();
+
+        return gson.fromJson(json, type);
     }
 }

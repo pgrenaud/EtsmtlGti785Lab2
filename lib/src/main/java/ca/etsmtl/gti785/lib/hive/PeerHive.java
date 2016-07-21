@@ -1,4 +1,4 @@
-package ca.etsmtl.gti785.lib.handler;
+package ca.etsmtl.gti785.lib.hive;
 
 import android.util.Log;
 
@@ -31,6 +31,36 @@ public class PeerHive {
         workers = new ConcurrentHashMap<>();
     }
 
+    public void spawnWorker(PeerEntity peer) {
+        Log.d("PeerHive", "spawnWorker: " + peer.getDisplayName());
+
+        PeerWorker worker = workers.get(peer.getUUID());
+
+        if (worker == null || !worker.isRunning()) {
+            try {
+                worker = new PeerWorker(this, peer);
+
+                workers.put(peer.getUUID(), worker);
+                pool.submit(worker);
+
+                Log.d("PeerHive", "spawnWorker: added peer worker " + peer.getDisplayName());
+            } catch (RejectedExecutionException e) {
+                Log.e("PeerHive", "Exception occurred while submitting new peer worker to thread pool", e);
+            }
+        }
+    }
+
+    public void killWorker(PeerEntity peer) {
+        Log.d("PeerHive", "killWorker: " + peer.getDisplayName());
+
+        PeerWorker worker = workers.get(peer.getUUID());
+
+        if (worker != null) {
+            worker.stop();
+            workers.remove(worker.getPeerEntity().getUUID());
+        }
+    }
+
     /**
      * Synchronizing peer hive by starting missing workers and stopping unneeded ones.
      * Call that method anytime you add or remove a peer from the repository.
@@ -48,25 +78,33 @@ public class PeerHive {
 
         // Starting workers whom peer has been added
         for (PeerEntity peer : peers.getAll()) {
-            PeerWorker worker = workers.get(peer.getUUID());
+            spawnWorker(peer);
 
-            if (worker == null) {
-                try {
-                    worker = new PeerWorker(this, peer);
-
-                    workers.put(peer.getUUID(), worker);
-                    pool.submit(worker);
-                } catch (RejectedExecutionException e) {
-                    Log.e("PeerHive", "Exception occurred while submitting new peer worker to thread pool", e);
-                }
-            }
+//            PeerWorker worker = workers.get(peer.getUUID());
+//
+//            if (worker == null) {
+//                try {
+//                    worker = new PeerWorker(this, peer);
+//
+//                    workers.put(peer.getUUID(), worker);
+//                    pool.submit(worker);
+//
+//                    Log.d("PeerHive", "sync: added peer worker " + peer.getDisplayName());
+//                } catch (RejectedExecutionException e) {
+//                    Log.e("PeerHive", "Exception occurred while submitting new peer worker to thread pool", e);
+//                }
+//            }
         }
     }
 
     public void stop() {
+        Log.d("PeerHive", "Stopping PeerHive");
+
         for (PeerWorker worker : workers.values()) {
             worker.stop();
         }
+
+        pool.shutdown();
 
         try {
             pool.awaitTermination(30, TimeUnit.SECONDS);

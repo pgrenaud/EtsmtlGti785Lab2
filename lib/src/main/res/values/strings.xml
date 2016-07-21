@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Library</string>
+    <string name="pref_json_peer_list_key">peer_list</string>
 </resources>

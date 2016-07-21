@@ -3,24 +3,18 @@ package ca.etsmtl.gti785.lib.runnable;
 import android.util.Log;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
-import ca.etsmtl.gti785.lib.handler.PeerHive;
-import cz.msebera.android.httpclient.HttpEntity;
-import cz.msebera.android.httpclient.client.methods.CloseableHttpResponse;
-import cz.msebera.android.httpclient.client.methods.HttpGet;
-import cz.msebera.android.httpclient.client.utils.URIBuilder;
-import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
-import cz.msebera.android.httpclient.impl.client.HttpClients;
-import cz.msebera.android.httpclient.util.EntityUtils;
+import ca.etsmtl.gti785.lib.hive.PeerHive;
+import ca.etsmtl.gti785.lib.web.HttpClientWrapper;
+import ca.etsmtl.gti785.lib.web.HttpClientWrapper.HttpResponseCallback;
+import cz.msebera.android.httpclient.conn.HttpHostConnectException;
 
 public class PeerWorker implements Runnable {
 
     private final PeerHive hive;
     private final PeerEntity peer;
-    private final CloseableHttpClient client;
+    private final HttpClientWrapper client;
 
     private final String pingUrl;
     private final String pollingUrl;
@@ -32,10 +26,13 @@ public class PeerWorker implements Runnable {
         this.hive = hive;
         this.peer = peer;
 
-        client = HttpClients.createDefault();
+        client = new HttpClientWrapper(peer.getHost());
 
         pingUrl = "/api/v1/ping";
-        pollingUrl = "/api/v1/polling/" + peer.getUUID().toString();
+        pollingUrl = "/api/v1/polling/" + hive.getService().getSelfPeerEntity().getUUID().toString();
+
+        running = false;
+        available = false;
     }
 
     @Override
@@ -43,50 +40,65 @@ public class PeerWorker implements Runnable {
         running = true;
 
         Log.d("PeerWorker", "starting worker: " + peer.getDisplayName());
+        Log.d("PeerWorker", "starting worker: " + peer.getUUID().toString());
 
         try {
             // TODO
-            performHttpGetJson(pingUrl, new HttpResponseCallback() {
+            client.performHttpGet(pingUrl, new HttpResponseCallback() {
                 @Override
                 public void onHttpResponse(int status, String content) {
+                    Log.d("PeerWorker", "ping: onHttpResponse: " + status);
+
                     if (status == 200) {
                         Log.d("PeerWorker", peer.getDisplayName() + " is online");
 
-                        peer.setOnline(true);
                         available = true;
-
-                        if (hive.getService().getListener() != null) {
-                            hive.getService().getListener().onPeerConnection(peer);
-                        }
+                        peer.setOnline(true);
+                        notifyListener();
                     }
                 }
                 @Override
-                public void onIOException(IOException exception) {
-                    available = false;
+                public void onException(Exception exception) {
+                    if (exception instanceof HttpHostConnectException) {
+                        Log.d("PeerWorker", "ping: " + exception.getMessage());
+                    } else {
+                        Log.d("PeerWorker", "ping: onException", exception);
+                    }
                 }
             });
 
-//            while (running && available) {
-//                performHttpGetJson(pollingUrl, new HttpResponseCallback() {
-//                    @Override
-//                    public void onHttpResponse(int status, String content) {
-//                        if (status == 418) {
-//                            // Polling timeout
-//                        } else if (status == 200) {
-//                            // Handle event
-//                        } else {
-//                            available = false;
-//                        }
-//                    }
-//
-//                    @Override
-//                    public void onIOException(IOException exception) {
-//                        available = false;
-//                    }
-//                });
-//            }
-        } catch (URISyntaxException e) {
-            Log.e("PeerWorker", "Exception occurred while building URI", e);
+            while (running && available) {
+                client.performHttpGet(pollingUrl, new HttpResponseCallback() {
+                    @Override
+                    public void onHttpResponse(int status, String content) {
+                        Log.d("PeerWorker", "polling");
+
+                        if (status == 408) {
+                            // Polling timeout
+                        } else if (status == 200) {
+                            // TODO: Handle event
+                        } else {
+                            Log.d("PeerWorker", "polling: onHttpResponse: " + status);
+
+                            available = false;
+                            peer.setOnline(false);
+                            notifyListener();
+                        }
+                    }
+                    @Override
+                    public void onException(Exception exception) {
+                        if (exception instanceof HttpHostConnectException) {
+                            Log.d("PeerWorker", "polling: " + exception.getMessage());
+                        } else {
+                            Log.d("PeerWorker", "polling: onException", exception);
+                        }
+
+                        available = false;
+                        peer.setOnline(false);
+                        notifyListener();
+                    }
+                });
+            }
         } finally {
             stop();
         }
@@ -101,7 +113,16 @@ public class PeerWorker implements Runnable {
 
         running = false;
 
+        if (available) {
+            Log.d("PeerWorker", "worker was not stopped properly");
+
+            available = false;
+            peer.setOnline(false);
+            notifyListener();
+        }
+
         // TODO: Cleanup
+
         try {
             client.close();
         } catch (IOException e) {
@@ -109,39 +130,17 @@ public class PeerWorker implements Runnable {
         }
     }
 
-    public void performHttpGetJson(String path, HttpResponseCallback callback) throws URISyntaxException {
-        try {
-            URI uri = new URIBuilder()
-                .setScheme("http")
-                .setHost(peer.getHost())
-                .setPath(path)
-                .build();
-
-            HttpGet get = new HttpGet(uri);
-            CloseableHttpResponse response = client.execute(get);
-
-            int status = response.getStatusLine().getStatusCode();
-
-            try {
-                HttpEntity entity = response.getEntity();
-                String json = EntityUtils.toString(entity);
-                EntityUtils.consume(entity);
-
-                callback.onHttpResponse(status, json);
-            } finally {
-                response.close();
-            }
-        } catch (IOException e) {
-            callback.onIOException(e);
-        }
-    }
-
     public PeerEntity getPeerEntity() {
         return peer;
     }
 
-    public interface HttpResponseCallback {
-        void onHttpResponse(int status, String content);
-        void onIOException(IOException exception);
+    public boolean isRunning() {
+        return running;
+    }
+
+    private void notifyListener() {
+        if (hive.getService().getListener() != null) {
+            hive.getService().getListener().onPeerConnection(hive.getService().getPeerRepository(), peer);
+        }
     }
 }

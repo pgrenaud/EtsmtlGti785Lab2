@@ -1,20 +1,22 @@
 package ca.etsmtl.gti785.peer.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.text.format.Formatter;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.SubMenu;
 import android.view.View;
@@ -48,13 +50,15 @@ import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.util.EditTextPreferenceDialog;
 import ca.etsmtl.gti785.peer.util.UriUtil;
 
+// FIXME: Remove unneeded listeners
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, FilesFragment.FilesFragmentListener, ServerFragment.ServerFragmentListener {
+        implements NavigationView.OnNavigationItemSelectedListener, FilesFragment.FilesFragmentListener, ServerFragment.ServerFragmentListener, PeersFragment.PeersFragmentListener {
 
     private static final int DIRECTORY_REQUEST_CODE = 123;
+    private static final int PERMISSIONS_REQUEST_CODE = 456;
 
     private PeerService service;
-    private PeerEntity selfPeerEntity;
+//    private PeerEntity selfPeer;
 
     private RelativeLayout contentLayout;
     private FloatingActionButton addFab;
@@ -74,7 +78,7 @@ public class MainActivity extends AppCompatActivity
     private int nextPeerId = Menu.FIRST;
     private boolean bound = false;
 
-    private PeerRepository peerRepository = new PeerRepository(); // FIXME
+//    private PeerRepository peerRepository = new PeerRepository(); // FIXME
 
     private ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -86,7 +90,13 @@ public class MainActivity extends AppCompatActivity
             service.setListener(listener);
 
             // TODO: Check if path has changed while we were gone.
+            // TODO: Same for the name
+
+            peersFragment.updateDataSet(service.getPeerRepository());
+            serverFragment.updateDataSet(service.getSelfPeerEntity());
             filesFragment.updateDataSet(service.getFileRepository());
+
+            service.getPeerHive().sync();
 
             bound = true;
         }
@@ -113,10 +123,11 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        public void onPeerConnection(PeerEntity peerEntity) {
+        public void onPeerConnection(final PeerRepository peerRepository, PeerEntity peerEntity) {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    Log.d("MainActivity", "onPeerConnection");
                     peersFragment.updateDataSet(peerRepository);
                 }
             });
@@ -167,13 +178,6 @@ public class MainActivity extends AppCompatActivity
             serverName = prefs.getString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
         }
 
-        WifiManager wifiMgr = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
-        int ip = wifiInfo.getIpAddress();
-        String serverAddress = Formatter.formatIpAddress(ip);
-
-        selfPeerEntity = new PeerEntity(serverName, serverAddress, PeerService.DEFAULT_SERVER_PORT);
-
         // Used for displaying Snackbar
         contentLayout = (RelativeLayout) findViewById(R.id.main_content_layout);
 
@@ -199,8 +203,11 @@ public class MainActivity extends AppCompatActivity
                         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
                         String name = prefs.getString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
 
-                        selfPeerEntity.setDisplayName(name);
-                        serverFragment.updateDataSet(selfPeerEntity);
+                        // TODO: Do something when service is null
+                        if (service != null) {
+                            service.getSelfPeerEntity().setDisplayName(name);
+                            serverFragment.updateDataSet(service.getSelfPeerEntity());
+                        }
                     }
                 });
                 dialog.showDialog();
@@ -215,9 +222,12 @@ public class MainActivity extends AppCompatActivity
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        Intent intent = new Intent(this, PeerService.class);
-        intent.putExtra(PeerService.EXTRA_DIRECTORY_PATH, serverDirectory);
-        startService(intent);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            Intent intent = new Intent(this, PeerService.class);
+            intent.putExtra(PeerService.EXTRA_DIRECTORY_PATH, serverDirectory);
+            intent.putExtra(PeerService.EXTRA_PEER_NAME, serverName);
+            startService(intent);
+        }
 
         // Initializing fixed fragments
         peersFragment = PeersFragment.newInstance();
@@ -232,8 +242,12 @@ public class MainActivity extends AppCompatActivity
     protected void onStart() {
         super.onStart();
 
-        Intent intent = new Intent(this, PeerService.class);
-        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_CODE);
+        } else {
+            Intent intent = new Intent(this, PeerService.class);
+            bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        }
     }
 
     @Override
@@ -363,7 +377,6 @@ public class MainActivity extends AppCompatActivity
                     editor.putString(getString(R.string.pref_server_directory_key), path);
                     editor.apply();
 
-                    // TODO: Do something when service is null
                     if (service == null) {
                         Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
                     } else {
@@ -384,8 +397,8 @@ public class MainActivity extends AppCompatActivity
                     Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
                 } else {
                     if (service.getPeerRepository().addOrUpdate(peerEntity)) {
-                        // TODO: Notify PeerService to spawn new worker
-                        service.getPeerHive().sync();
+//                        service.getPeerHive().sync(); // TODO
+                        service.getPeerHive().spawnWorker(peerEntity);
                     }
 
                     peersFragment.updateDataSet(service.getPeerRepository());
@@ -418,6 +431,17 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
+            // If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // permission was granted, yay!
+                recreate();
+            }
+        }
+    }
+
     public void setActionDirectoryVisible(boolean actionDirectoryVisible) {
         this.actionDirectoryVisible = actionDirectoryVisible;
 
@@ -425,14 +449,25 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public PeerService getPeerService() {
-        return service;
+    public void onPeerEntityDismiss(PeerEntity peer) {
+        // TODO: Do something when service is null
+        if (service != null) {
+            service.getPeerHive().killWorker(peer);
+            service.getPeerRepository().remove(peer);
+
+            peersFragment.updateDataSet(service.getPeerRepository());
+        }
     }
 
-    @Override
-    public PeerEntity getSelfPeerEntity() {
-        return selfPeerEntity;
-    }
+//    @Override
+//    public PeerService getPeerService() {
+//        return service;
+//    }
+
+//    @Override
+//    public PeerEntity getSelfPeerEntity() {
+//        return selfPeer;
+//    }
 
     public Activity getActivity() {
         return this;

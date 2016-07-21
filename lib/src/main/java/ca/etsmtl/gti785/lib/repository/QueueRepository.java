@@ -22,7 +22,7 @@ public class QueueRepository {
     }
 
     public BlockingQueue<Object> getOrCreate(UUID uuid) {
-        BlockingQueue<Object> queue = queues.get(uuid);
+        BlockingQueue<Object> queue = get(uuid);
 
         if (queue == null) {
             queue = new LinkedBlockingQueue<>();

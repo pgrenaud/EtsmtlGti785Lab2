@@ -95,6 +95,7 @@ public class FilesFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
+
         listener = null;
     }
 
@@ -142,6 +143,6 @@ public class FilesFragment extends Fragment {
         // TODO: Update argument type and name
 //        void onListFragmentInteraction(File file);
 //        void onFileRepositoryUpdate(FileRepository fileRepository);
-        PeerService getPeerService();
+//        PeerService getPeerService();
     }
 }

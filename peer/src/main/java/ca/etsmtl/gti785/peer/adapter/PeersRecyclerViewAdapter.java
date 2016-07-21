@@ -9,16 +9,16 @@ import android.widget.TextView;
 
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
 import ca.etsmtl.gti785.peer.R;
-import ca.etsmtl.gti785.peer.fragment.PeersFragment.OnListFragmentInteractionListener;
+import ca.etsmtl.gti785.peer.fragment.PeersFragment.PeersFragmentListener;
 
 import java.util.List;
 
 public class PeersRecyclerViewAdapter extends RecyclerView.Adapter<PeersRecyclerViewAdapter.ViewHolder> {
 
     private final List<PeerEntity> peers;
-    private final OnListFragmentInteractionListener listener;
+    private final PeersFragmentListener listener;
 
-    public PeersRecyclerViewAdapter(List<PeerEntity> peers, OnListFragmentInteractionListener listener) {
+    public PeersRecyclerViewAdapter(List<PeerEntity> peers, PeersFragmentListener listener) {
         this.peers = peers;
         this.listener = listener;
     }

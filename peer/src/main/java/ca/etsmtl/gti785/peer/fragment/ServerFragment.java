@@ -38,6 +38,7 @@ public class ServerFragment extends Fragment {
     private String mParam2;
 
     private ServerFragmentListener listener;
+    private PeerEntity peerEntity;
 
     private TextView nameText;
     private TextView statusText;
@@ -98,7 +99,10 @@ public class ServerFragment extends Fragment {
             statusText = (TextView) getView().findViewById(R.id.server_status_text);
             qrImage = (ImageView) getView().findViewById(R.id.server_qr_image);
 
-            updateDataSet(listener.getSelfPeerEntity());
+
+            if (peerEntity != null) {
+                updateDataSet(peerEntity);
+            }
 
             // FIXME
 //            if (qrBitmap != null) {
@@ -120,16 +124,21 @@ public class ServerFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
+
         listener = null;
     }
 
     public void updateDataSet(PeerEntity peerEntity) {
-        nameText.setText(getString(R.string.server_peer_name, peerEntity.getDisplayName()));
-        statusText.setText(getString(R.string.server_peer_status, peerEntity.getIpAddress(), peerEntity.getPort()));
+        this.peerEntity = peerEntity;
 
-        qrImage.setImageDrawable(null);
+        if (isAdded()) {
+            nameText.setText(getString(R.string.server_peer_name, peerEntity.getDisplayName()));
+            statusText.setText(getString(R.string.server_peer_status, peerEntity.getIpAddress(), peerEntity.getPort()));
 
-        new BitmapAsyncTask().execute(peerEntity.encode());
+            qrImage.setImageDrawable(null);
+
+            new BitmapAsyncTask().execute(peerEntity.encode());
+        }
     }
 
 //    public void reloadStatus() {
@@ -148,21 +157,6 @@ public class ServerFragment extends Fragment {
 //        nameText.setText(getString(R.string.server_peer_name, name));
 //        statusText.setText(getString(R.string.server_peer_status, serverAddr, "8099")); // TODO: Bind values
 //    }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface ServerFragmentListener {
-        // TODO: Update argument type and name
-        PeerEntity getSelfPeerEntity();
-    }
 
     // See: https://developer.android.com/training/displaying-bitmaps/cache-bitmap.html
     // See: https://developer.android.com/training/displaying-bitmaps/process-bitmap.html#BitmapWorkerTask
@@ -195,5 +189,20 @@ public class ServerFragment extends Fragment {
             Log.d("BitmapAsyncTask", "image set");
         }
 
+    }
+
+    /**
+     * This interface must be implemented by activities that contain this
+     * fragment to allow an interaction in this fragment to be communicated
+     * to the activity and potentially other fragments contained in that
+     * activity.
+     * <p/>
+     * See the Android Training lesson <a href=
+     * "http://developer.android.com/training/basics/fragments/communicating.html"
+     * >Communicating with Other Fragments</a> for more information.
+     */
+    public interface ServerFragmentListener {
+        // TODO: Update argument type and name
+//        PeerEntity getSelfPeerEntity();
     }
 }
