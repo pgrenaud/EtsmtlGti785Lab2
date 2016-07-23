@@ -210,7 +210,7 @@ public class PeerService extends Service {
     public interface PeerServiceListener {
         void onServerStart(PeerEntity peerEntity); // From server
         void onServerError(String message); // From server // TODO: Define proper arguments
-        void onPeerConnection(PeerRepository peerRepository, PeerEntity peerEntity); // From long-polling
+        void onPeerConnection(PeerEntity peerEntity); // From long-polling
         void onPeerDisplayNameUpdate(PeerEntity peerEntity); // From long-polling
         void onPeerLocationUpdate(PeerEntity peerEntity); // From long-polling
         // or

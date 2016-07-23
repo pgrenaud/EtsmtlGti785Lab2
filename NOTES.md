@@ -7,6 +7,9 @@ http://stackoverflow.com/questions/8989099/how-to-communicate-a-service-with-a-r
 
 http://stackoverflow.com/questions/3841317/how-to-see-if-wifi-is-connected-in-android
 
+http://stackoverflow.com/a/7908446
+http://stackoverflow.com/a/23686083
+
 
 * According to this link, there is no timeout by default:
 
@@ -15,16 +18,21 @@ http://stackoverflow.com/questions/3841317/how-to-see-if-wifi-is-connected-in-an
 TODO:
 
 * Event to update display name
+* Event to update location
 * Class to handle GET file list and file download
 * Sync state of peer on event
 * Prevent server from starting if network is not available
 * Remove sendJSON() and add encode() to *Repository
+* Wrap all listener call in try-catch block
+* Give method to check server status and error message on service
+* Fixe last accessed time
 
 * NFC/Beaming
 * Remove peer from list
 * List files from peer
 * Download file from peer
 * Notification when downloading/finished
+* Remove open directory button from menu and use a fab instead
 
 4: b99861aa-ad01-3f21-8c8d-26f61441d10f
 5: cc63de94-746f-3bbd-81b8-834c67bead80

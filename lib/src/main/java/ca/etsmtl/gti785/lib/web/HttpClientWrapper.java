@@ -1,6 +1,7 @@
 package ca.etsmtl.gti785.lib.web;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -27,10 +28,10 @@ public class HttpClientWrapper {
     public void performHttpGet(String path, HttpResponseCallback callback) {
         try {
             URI uri = new URIBuilder()
-                    .setScheme("http")
-                    .setHost(host)
-                    .setPath(path)
-                    .build();
+                .setScheme("http")
+                .setHost(host)
+                .setPath(path)
+                .build();
 
             HttpGet get = new HttpGet(uri);
             CloseableHttpResponse response = client.execute(get);
@@ -51,12 +52,49 @@ public class HttpClientWrapper {
         }
     }
 
+    public void performBinaryHttpGet(String path, BinaryHttpResponseCallback callback) {
+        try {
+            URI uri = new URIBuilder()
+                .setScheme("http")
+                .setHost(host)
+                .setPath(path)
+                .build();
+
+            HttpGet get = new HttpGet(uri);
+            CloseableHttpResponse response = client.execute(get);
+
+            int status = response.getStatusLine().getStatusCode();
+
+            try {
+                HttpEntity entity = response.getEntity();
+
+                callback.onHttpResponse(status, entity.getContent());
+
+                EntityUtils.consume(entity);
+            } finally {
+                response.close();
+            }
+        } catch (IOException | URISyntaxException e) {
+            callback.onException(e);
+        }
+    }
+
     public void close() throws IOException {
         client.close();
     }
 
     public interface HttpResponseCallback {
         void onHttpResponse(int status, String content);
+
+        /**
+         *
+         * @param exception Can be either a IOException or a URISyntaxException.
+         */
+        void onException(Exception exception);
+    }
+
+    public interface BinaryHttpResponseCallback {
+        void onHttpResponse(int status, InputStream is);
 
         /**
          *

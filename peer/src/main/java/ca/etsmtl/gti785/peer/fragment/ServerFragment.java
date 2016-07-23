@@ -95,9 +95,9 @@ public class ServerFragment extends Fragment {
         View view = getView();
 
         if (view != null) {
-            nameText = (TextView) getView().findViewById(R.id.server_name_text);
-            statusText = (TextView) getView().findViewById(R.id.server_status_text);
-            qrImage = (ImageView) getView().findViewById(R.id.server_qr_image);
+            nameText = (TextView) view.findViewById(R.id.server_name_text);
+            statusText = (TextView) view.findViewById(R.id.server_status_text);
+            qrImage = (ImageView) view.findViewById(R.id.server_qr_image);
 
 
             if (peerEntity != null) {
@@ -118,6 +118,8 @@ public class ServerFragment extends Fragment {
         super.onDestroyView();
 
         // TODO: Clear all UI references
+        nameText = null;
+        statusText = null;
         qrImage = null;
     }
 

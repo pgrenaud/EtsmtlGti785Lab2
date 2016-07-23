@@ -15,6 +15,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import ca.etsmtl.gti785.lib.entity.EventEntity;
 import ca.etsmtl.gti785.lib.entity.FileEntity;
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
 import ca.etsmtl.gti785.lib.hive.PeerHive;
@@ -50,12 +51,14 @@ public class RequestHandler {
             peerHive.spawnWorker(peer);
         }
 
-        BlockingQueue<Object> queue = queueRepository.getOrCreate(uuid);
+        BlockingQueue<EventEntity> queue = queueRepository.getOrCreate(uuid);
 
         try {
-            Object event = queue.poll(REQUEST_TIMEOUT, TimeUnit.SECONDS); // FIXME
+            EventEntity event = queue.poll(REQUEST_TIMEOUT, TimeUnit.SECONDS); // FIXME
 
             if (event != null) {
+                Log.d("RequestHandler", "handlePolling: event " + event.encode());
+
                 return sendEvent(event);
             } else {
                 return sendTimeout();

@@ -50,16 +50,17 @@ public class PeersRecyclerViewAdapter extends RecyclerView.Adapter<PeersRecycler
             holder.statusImage.setImageResource(R.drawable.ic_brightness_1_red_500_18dp);
         }
 
-//        holder.peerView.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (null != listener) {
-//                    // Notify the active callbacks interface (the activity, if the
-//                    // fragment is attached to one) that an item has been selected.
+        holder.peerView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (listener != null) {
+                    // Notify the active callbacks interface (the activity, if the
+                    // fragment is attached to one) that an item has been selected.
 //                    listener.onListFragmentInteraction(holder.peer);
-//                }
-//            }
-//        });
+                    listener.onPeerEntityClick(holder.peer);
+                }
+            }
+        });
     }
 
     @Override

@@ -135,6 +135,7 @@ public class PeersFragment extends Fragment {
     public interface PeersFragmentListener {
         // TODO: Update argument type and name
 //        void onListFragmentInteraction(DummyItem item);
+        void onPeerEntityClick(PeerEntity peer);
         void onPeerEntityDismiss(PeerEntity peer);
     }
 }

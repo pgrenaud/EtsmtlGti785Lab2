@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ca.etsmtl.gti785.lib.entity.EventEntity;
 import ca.etsmtl.gti785.lib.handler.RequestHandler;
 import fi.iki.elonen.NanoHTTPD;
 
@@ -152,6 +153,7 @@ public class WebServer extends NanoHTTPD {
         }
     }
 
+    // FIXME: Remove that thing
     public static Response sendJSON(Object object) {
         Gson gson = new Gson();
 
@@ -168,8 +170,8 @@ public class WebServer extends NanoHTTPD {
         }
     }
 
-    public static Response sendEvent(Object event) {
-        return newFixedLengthResponse(Response.Status.OK, MIME_JSON, event.toString()); // FIXME
+    public static Response sendEvent(EventEntity event) {
+        return newFixedLengthResponse(Response.Status.OK, MIME_JSON, event.encode());
     }
 
     public static Response sendTimeout() {

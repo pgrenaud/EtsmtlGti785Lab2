@@ -2,8 +2,11 @@ package ca.etsmtl.gti785.lib.runnable;
 
 import android.util.Log;
 
+import com.google.gson.JsonSyntaxException;
+
 import java.io.IOException;
 
+import ca.etsmtl.gti785.lib.entity.EventEntity;
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
 import ca.etsmtl.gti785.lib.hive.PeerHive;
 import ca.etsmtl.gti785.lib.web.HttpClientWrapper;
@@ -54,7 +57,7 @@ public class PeerWorker implements Runnable {
 
                         available = true;
                         peer.setOnline(true);
-                        notifyListener();
+                        notifyConnectionListener();
                     }
                 }
                 @Override
@@ -76,13 +79,33 @@ public class PeerWorker implements Runnable {
                         if (status == 408) {
                             // Polling timeout
                         } else if (status == 200) {
-                            // TODO: Handle event
+                            Log.d("PeerWorker", "polling: " + content);
+
+                            try {
+                                EventEntity event = EventEntity.decode(content);
+
+                                // Handle event
+                                if (event.getEvent() == EventEntity.Type.DISPLAY_NAME_UPDATE) {
+                                    peer.setDisplayName(event.getParams().getDisplayName());
+                                    notifyDisplayNameListener();
+                                } else if (event.getEvent() == EventEntity.Type.LOCATION_UPDATE) {
+                                    peer.getLocation().setLatitude(event.getParams().getLocation().getLatitude());
+                                    peer.getLocation().setLongitude(event.getParams().getLocation().getLongitude());
+                                    notifyLocationListener();
+                                } else {
+                                    Log.e("PeerWorker", "polling: unknown event type");
+
+                                    available = false;
+                                }
+                            } catch (JsonSyntaxException e) {
+                                Log.e("PeerWorker", "polling: unknown event", e);
+
+                                available = false;
+                            }
                         } else {
-                            Log.d("PeerWorker", "polling: onHttpResponse: " + status);
+                            Log.e("PeerWorker", "polling: unknown status: " + status);
 
                             available = false;
-                            peer.setOnline(false);
-                            notifyListener();
                         }
                     }
                     @Override
@@ -90,15 +113,17 @@ public class PeerWorker implements Runnable {
                         if (exception instanceof HttpHostConnectException) {
                             Log.d("PeerWorker", "polling: " + exception.getMessage());
                         } else {
-                            Log.d("PeerWorker", "polling: onException", exception);
+                            Log.e("PeerWorker", "polling: onException", exception);
                         }
 
                         available = false;
-                        peer.setOnline(false);
-                        notifyListener();
                     }
                 });
             }
+
+            available = false;
+            peer.setOnline(false);
+            notifyConnectionListener();
         } finally {
             stop();
         }
@@ -118,7 +143,7 @@ public class PeerWorker implements Runnable {
 
             available = false;
             peer.setOnline(false);
-            notifyListener();
+            notifyConnectionListener();
         }
 
         // TODO: Cleanup
@@ -138,9 +163,21 @@ public class PeerWorker implements Runnable {
         return running;
     }
 
-    private void notifyListener() {
+    private void notifyConnectionListener() {
         if (hive.getService().getListener() != null) {
-            hive.getService().getListener().onPeerConnection(hive.getService().getPeerRepository(), peer);
+            hive.getService().getListener().onPeerConnection(peer);
+        }
+    }
+
+    private void notifyDisplayNameListener() {
+        if (hive.getService().getListener() != null) {
+            hive.getService().getListener().onPeerDisplayNameUpdate(peer);
+        }
+    }
+
+    private void notifyLocationListener() {
+        if (hive.getService().getListener() != null) {
+            hive.getService().getListener().onPeerLocationUpdate(peer);
         }
     }
 }

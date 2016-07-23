@@ -1,30 +1,33 @@
 package ca.etsmtl.gti785.peer.adapter;
 
+import static android.text.format.Formatter.formatFileSize;
+
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
-
-import java.util.List;
 
 import ca.etsmtl.gti785.lib.entity.FileEntity;
 import ca.etsmtl.gti785.peer.R;
-import ca.etsmtl.gti785.peer.fragment.FilesFragment.FilesFragmentListener;
+import ca.etsmtl.gti785.peer.fragment.PeerFilesFragment.PeerFilesFragmentListener;
 
-import static android.text.format.Formatter.formatFileSize;
+import java.util.List;
 
-public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecyclerViewAdapter.ViewHolder> {
+public class PeerFilesRecyclerViewAdapter extends RecyclerView.Adapter<PeerFilesRecyclerViewAdapter.ViewHolder> {
 
     private final Context context;
     private final List<FileEntity> files;
-    private final FilesFragmentListener listener;
+    private final PeerFilesFragmentListener listener;
+    private final String host;
 
-    public FilesRecyclerViewAdapter(Context context, List<FileEntity> files, FilesFragmentListener listener) {
+    public PeerFilesRecyclerViewAdapter(Context context, List<FileEntity> files, PeerFilesFragmentListener listener, String host) {
         this.context = context;
         this.files = files;
         this.listener = listener;
+        this.host = host;
     }
 
     @Override
@@ -40,17 +43,16 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
         holder.nameText.setText(holder.file.getName());
 //        holder.sizeText.setText(Long.toString(files.get(position).getSize()));
         holder.sizeText.setText(formatFileSize(context, holder.file.getSize()));
+        holder.downloadImage.setVisibility(View.VISIBLE);
 
-//        holder.fileView.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (null != listener) {
-//                    // Notify the active callbacks interface (the activity, if the
-//                    // fragment is attached to one) that an item has been selected.
-//                    listener.onListFragmentInteraction(holder.file);
-//                }
-//            }
-//        });
+        holder.downloadImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (listener != null) {
+                    listener.onDownloadImageClick(holder.file, host);
+                }
+            }
+        });
     }
 
     @Override
@@ -62,6 +64,7 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
         public final View fileView;
         public final TextView nameText;
         public final TextView sizeText;
+        public final ImageView downloadImage;
 
         public FileEntity file;
 
@@ -71,6 +74,8 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
             fileView = view;
             nameText = (TextView) view.findViewById(R.id.files_name_text);
             sizeText = (TextView) view.findViewById(R.id.files_size_text);
+            downloadImage = (ImageView) view.findViewById(R.id.files_download_image);
+
         }
 
         @Override
