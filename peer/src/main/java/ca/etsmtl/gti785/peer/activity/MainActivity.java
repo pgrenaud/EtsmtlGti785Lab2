@@ -132,18 +132,7 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void run() {
                     Log.d("MainActivity", "onPeerDisplayNameUpdate");
-                    peersFragment.updateDataSet(service.getPeerRepository());
-
-                    SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
-                    Integer itemId = mapPeerToItem.get(peerEntity.getUUID());
-
-                    MenuItem item;
-                    if (itemId != null) {
-                        item = submenu.findItem(itemId);
-                        item.setTitle(peerEntity.getDisplayName());
-                    }
-
-                    // TODO: Call setTitle() if we are currently on that peer screen
+                    onPeerEntityNameUpdate(peerEntity);
                 }
             });
         }
@@ -409,19 +398,7 @@ public class MainActivity extends AppCompatActivity
                         service.getPeerHive().spawnWorker(peer);
                     }
 
-                    peersFragment.updateDataSet(service.getPeerRepository());
-
-                    // Update display name
-                    SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
-                    Integer itemId = mapPeerToItem.get(peer.getUUID());
-
-                    MenuItem item;
-                    if (itemId != null) {
-                        item = submenu.findItem(itemId);
-                        item.setTitle(peer.getDisplayName());
-                    }
-
-                    // TODO: Call setTitle() if we are currently on that peer screen
+                    onPeerEntityNameUpdate(peer);
                 }
             } catch (JsonSyntaxException e) {
                 Snackbar.make(contentLayout, R.string.snackbar_peer_error, Snackbar.LENGTH_LONG).show();
@@ -436,6 +413,23 @@ public class MainActivity extends AppCompatActivity
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // permission was granted, yay!
                 recreate();
+            }
+        }
+    }
+
+    public void onPeerEntityNameUpdate(PeerEntity peerEntity) {
+        peersFragment.updateDataSet(service.getPeerRepository());
+
+        SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+        Integer itemId = mapPeerToItem.get(peerEntity.getUUID());
+
+        MenuItem item;
+        if (itemId != null) {
+            item = submenu.findItem(itemId);
+            item.setTitle(peerEntity.getDisplayName());
+
+            if (item.isChecked()) {
+                setTitle(item.getTitle());
             }
         }
     }
