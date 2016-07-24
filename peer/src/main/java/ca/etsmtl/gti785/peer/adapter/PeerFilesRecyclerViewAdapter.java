@@ -6,22 +6,28 @@ import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.pgrenaud.android.p2p.entity.FileEntity;
 
+import ca.etsmtl.gti785.peer.R;
+import ca.etsmtl.gti785.peer.fragment.PeerFilesFragment.PeerFilesFragmentListener;
+
 import java.util.List;
 
-import ca.etsmtl.gti785.peer.R;
-
-public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecyclerViewAdapter.ViewHolder> {
+public class PeerFilesRecyclerViewAdapter extends RecyclerView.Adapter<PeerFilesRecyclerViewAdapter.ViewHolder> {
 
     private final Context context;
     private final List<FileEntity> files;
+    private final PeerFilesFragmentListener listener;
+    private final String host;
 
-    public FilesRecyclerViewAdapter(Context context, List<FileEntity> files) {
+    public PeerFilesRecyclerViewAdapter(Context context, List<FileEntity> files, PeerFilesFragmentListener listener, String host) {
         this.context = context;
         this.files = files;
+        this.listener = listener;
+        this.host = host;
     }
 
     @Override
@@ -35,7 +41,18 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.file = files.get(position);
         holder.nameText.setText(holder.file.getName());
+//        holder.sizeText.setText(Long.toString(files.get(position).getSize()));
         holder.sizeText.setText(Formatter.formatFileSize(context, holder.file.getSize()));
+        holder.downloadImage.setVisibility(View.VISIBLE);
+
+        holder.downloadImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (listener != null) {
+                    listener.onDownloadImageClick(holder.file, host);
+                }
+            }
+        });
     }
 
     @Override
@@ -47,6 +64,7 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
         public final View fileView;
         public final TextView nameText;
         public final TextView sizeText;
+        public final ImageView downloadImage;
 
         public FileEntity file;
 
@@ -56,6 +74,8 @@ public class FilesRecyclerViewAdapter extends RecyclerView.Adapter<FilesRecycler
             fileView = view;
             nameText = (TextView) view.findViewById(R.id.files_name_text);
             sizeText = (TextView) view.findViewById(R.id.files_size_text);
+            downloadImage = (ImageView) view.findViewById(R.id.files_download_image);
+
         }
 
         @Override

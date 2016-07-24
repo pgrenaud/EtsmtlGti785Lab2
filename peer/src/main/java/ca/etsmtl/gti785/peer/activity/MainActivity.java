@@ -1,13 +1,25 @@
 package ca.etsmtl.gti785.peer.activity;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -20,31 +32,133 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.RelativeLayout;
 
+import com.google.gson.JsonSyntaxException;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.pgrenaud.android.p2p.entity.EventEntity;
+import com.pgrenaud.android.p2p.entity.FileEntity;
+import com.pgrenaud.android.p2p.entity.PeerEntity;
+import com.pgrenaud.android.p2p.helper.ApiEndpoints;
+import com.pgrenaud.android.p2p.service.PeerService;
+import com.pgrenaud.android.p2p.service.PeerService.PeerServiceBinder;
+import com.pgrenaud.android.p2p.service.PeerService.PeerServiceListener;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import ca.etsmtl.gti785.peer.fragment.FilesFragment;
+import ca.etsmtl.gti785.peer.fragment.PeerFilesFragment;
+import ca.etsmtl.gti785.peer.fragment.PeerFilesFragment.PeerFilesFragmentListener;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment;
+import ca.etsmtl.gti785.peer.fragment.PeersFragment.PeersFragmentListener;
 import ca.etsmtl.gti785.peer.fragment.ServerFragment;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.util.EditTextPreferenceDialog;
 import ca.etsmtl.gti785.peer.util.UriUtil;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity
+        implements NavigationView.OnNavigationItemSelectedListener, PeerFilesFragmentListener, PeersFragmentListener {
 
     private static final int DIRECTORY_REQUEST_CODE = 123;
+    private static final int PERMISSIONS_REQUEST_CODE = 456;
+
+    private PeerService service;
 
     private RelativeLayout contentLayout;
     private FloatingActionButton addFab;
     private FloatingActionButton editFab;
+    private NavigationView navigationView;
     private MenuItem previousMenuItem;
 
     private PeersFragment peersFragment;
     private ServerFragment serverFragment;
     private FilesFragment filesFragment;
 
+    // Bidirectional map between Menu ItemId and PeerEntity UUID
+    private Map<Integer, UUID> mapItemToPeer = new HashMap<>();
+    private Map<UUID, Integer> mapPeerToItem = new HashMap<>();
+
     private boolean actionDirectoryVisible = false;
     private int nextPeerId = Menu.FIRST;
+    private boolean bound = false;
+
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            Log.d("MainActivity", "onServiceConnected");
+
+            PeerServiceBinder binder = (PeerServiceBinder) iBinder;
+            service = binder.getService();
+            service.setListener(listener);
+
+            // TODO: Check if path has changed while we were gone.
+            // TODO: Same for the name
+
+            peersFragment.updateDataSet(service.getPeerRepository());
+            serverFragment.updateDataSet(service.getSelfPeerEntity());
+            filesFragment.updateDataSet(service.getFileRepository());
+
+            service.getPeerHive().sync();
+
+            bound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            Log.d("MainActivity", "onServiceDisconnected");
+
+            service.setListener(null);
+
+            bound = false;
+        }
+    };
+
+    private PeerServiceListener listener = new PeerServiceListener() {
+        @Override
+        public void onPeerConnection(PeerEntity peerEntity) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d("MainActivity", "onPeerConnection");
+                    peersFragment.updateDataSet(service.getPeerRepository());
+                }
+            });
+        }
+
+        @Override
+        public void onPeerDisplayNameUpdate(final PeerEntity peerEntity) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d("MainActivity", "onPeerDisplayNameUpdate");
+                    peersFragment.updateDataSet(service.getPeerRepository());
+
+                    SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+                    Integer itemId = mapPeerToItem.get(peerEntity.getUUID());
+
+                    MenuItem item;
+                    if (itemId != null) {
+                        item = submenu.findItem(itemId);
+                        item.setTitle(peerEntity.getDisplayName());
+                    }
+
+                    // TODO: Call setTitle() if we are currently on that peer screen
+                }
+            });
+        }
+
+        @Override
+        public void onPeerLocationUpdate(PeerEntity peerEntity) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Log.d("MainActivity", "onPeerLocationUpdate");
+                    peersFragment.updateDataSet(service.getPeerRepository());
+                }
+            });
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,12 +175,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString(getString(R.string.pref_server_directory_key), Environment.getExternalStorageDirectory().getPath());
             editor.apply();
+
+            serverDirectory = prefs.getString(getString(R.string.pref_server_directory_key), Environment.getExternalStorageDirectory().getPath());
         }
 
         if (serverName == null) {
             SharedPreferences.Editor editor = prefs.edit();
             editor.putString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
             editor.apply();
+
+            serverName = prefs.getString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
         }
 
         // Used for displaying Snackbar
@@ -91,7 +209,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 dialog.setListener(new EditTextPreferenceDialog.OnValueChangeListener() {
                     @Override
                     public void onValueChange(String value) {
-                        serverFragment.reloadStatus();
+                        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                        String name = prefs.getString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
+
+                        if (service == null) {
+                            Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
+                        } else {
+                            EventEntity event = new EventEntity(EventEntity.Type.DISPLAY_NAME_UPDATE);
+                            event.getParams().setDisplayName(name);
+
+                            service.getSelfPeerEntity().setDisplayName(name);
+                            service.getQueueRepository().putAll(event);
+
+                            serverFragment.updateDataSet(service.getSelfPeerEntity());
+                        }
                     }
                 });
                 dialog.showDialog();
@@ -103,8 +234,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            Intent intent = new Intent(this, PeerService.class);
+            intent.putExtra(PeerService.EXTRA_DIRECTORY_PATH, serverDirectory);
+            intent.putExtra(PeerService.EXTRA_PEER_NAME, serverName);
+            startService(intent);
+        }
 
         // Initializing fixed fragments
         peersFragment = PeersFragment.newInstance();
@@ -113,6 +251,37 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         // Perform initial setup by triggering a navigation change
         onNavigationItemSelected(navigationView.getMenu().findItem(R.id.nav_peers));
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_CODE);
+        } else {
+            Intent intent = new Intent(this, PeerService.class);
+            bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if (bound) {
+            unbindService(connection);
+            bound = false;
+            service.setListener(null);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        Intent intent = new Intent(this, PeerService.class);
+        stopService(intent);
     }
 
     @Override
@@ -143,9 +312,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        } else if (id == R.id.action_directory) {
+        if (id == R.id.action_directory) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
             startActivityForResult(intent, DIRECTORY_REQUEST_CODE);
 
@@ -190,10 +357,28 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, filesFragment).commit();
         } else {
-            setTitle(item.getTitle());
-            setActionDirectoryVisible(false);
-            addFab.hide();
-            editFab.hide();
+            UUID uuid = mapItemToPeer.get(id);
+
+            if (uuid != null) {
+                if (service == null) {
+                    Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
+                } else {
+                    PeerEntity peer = service.getPeerRepository().get(uuid);
+
+                    setTitle(item.getTitle());
+                    setActionDirectoryVisible(false);
+                    addFab.hide();
+                    editFab.hide();
+
+                    PeerFilesFragment peerFilesFragment = PeerFilesFragment.newInstance(peer);
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, peerFilesFragment).commit();
+
+                    peer.updateAccessedAt();
+                    peersFragment.updateDataSet(service.getPeerRepository());
+                }
+            }
+
+            Log.d("MainActivity", "onNavigationItemSelected:" + item.getItemId());
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -205,6 +390,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        Log.d("MainActivity", "onActivityResult");
 
         if (requestCode == DIRECTORY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
@@ -218,32 +405,123 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     editor.putString(getString(R.string.pref_server_directory_key), path);
                     editor.apply();
 
-                    filesFragment.reloadFiles();
+                    if (service == null) {
+                        Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
+                    } else {
+                        service.getFileRepository().removeAll();
+                        service.getFileRepository().addAll(path);
+
+                        filesFragment.updateDataSet(service.getFileRepository());
+                    }
                 }
             }
         } else if (requestCode == IntentIntegrator.REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
 
-//            scanResult.getContents() // TODO
+            try {
+                PeerEntity peer = PeerEntity.decode(scanResult.getContents());
 
-            NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+                if (service == null) {
+                    Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
+                } else {
+                    if (service.getPeerRepository().addOrUpdate(peer)) {
+                        service.getPeerHive().spawnWorker(peer);
+                    }
 
-            SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+                    peersFragment.updateDataSet(service.getPeerRepository());
 
-            MenuItem item = submenu.add(Menu.NONE, nextPeerId, Menu.NONE, "Peer " + nextPeerId);
-            item.setIcon(R.drawable.ic_phone_android_black_24dp);
+                    // Update display name
+                    SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+                    Integer itemId = mapPeerToItem.get(peer.getUUID());
 
-            nextPeerId++;
+                    MenuItem item;
+                    if (itemId != null) {
+                        item = submenu.findItem(itemId);
+                        item.setTitle(peer.getDisplayName());
+                    }
+
+                    // TODO: Call setTitle() if we are currently on that peer screen
+                }
+            } catch (JsonSyntaxException e) {
+                Snackbar.make(contentLayout, R.string.snackbar_peer_error, Snackbar.LENGTH_LONG).show();
+            }
         }
     }
 
-    public Activity getActivity() {
-        return this;
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
+            // If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // permission was granted, yay!
+                recreate();
+            }
+        }
     }
 
     public void setActionDirectoryVisible(boolean actionDirectoryVisible) {
         this.actionDirectoryVisible = actionDirectoryVisible;
 
         invalidateOptionsMenu();
+    }
+
+    @Override
+    public void onPeerEntityClick(PeerEntity peerEntity) {
+        SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+        Integer itemId = mapPeerToItem.get(peerEntity.getUUID());
+
+        MenuItem item;
+        if (itemId == null) {
+            itemId = nextPeerId++;
+
+            item = submenu.add(Menu.NONE, itemId, Menu.NONE, peerEntity.getDisplayName());
+            item.setIcon(R.drawable.ic_phone_android_black_24dp);
+
+            mapItemToPeer.put(itemId, peerEntity.getUUID());
+            mapPeerToItem.put(peerEntity.getUUID(), itemId);
+        } else {
+            item = submenu.findItem(itemId);
+            item.setTitle(peerEntity.getDisplayName());
+        }
+
+        // Switch to that fragment
+        onNavigationItemSelected(item);
+    }
+
+    @Override
+    public void onPeerEntityDismiss(PeerEntity peer) {
+        if (service == null) {
+            Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
+        } else {
+            service.getPeerHive().killWorker(peer);
+            service.getPeerRepository().remove(peer);
+
+            peersFragment.updateDataSet(service.getPeerRepository());
+
+            SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+            Integer itemId = mapPeerToItem.get(peer.getUUID());
+
+            if (itemId != null) {
+                mapPeerToItem.remove(peer.getUUID());
+                mapItemToPeer.remove(itemId);
+
+                submenu.removeItem(itemId);
+            }
+        }
+    }
+
+    @Override
+    public void onDownloadImageClick(FileEntity file, String host) {
+        Uri uri = Uri.parse(ApiEndpoints.getFileDownloadUri(host, file.getUuid().toString()));
+
+        DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        DownloadManager.Request request = new DownloadManager.Request(uri);
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, file.getName());
+        dm.enqueue(request);
+    }
+
+    public Activity getActivity() {
+        return this;
     }
 }

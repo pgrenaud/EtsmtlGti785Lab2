@@ -5,46 +5,51 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.gson.Gson;
+import com.pgrenaud.android.p2p.entity.PeerEntity;
+import com.pgrenaud.android.p2p.repository.PeerRepository;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.adapter.PeersRecyclerViewAdapter;
-import ca.etsmtl.gti785.peer.dummy.DummyContent;
-import ca.etsmtl.gti785.peer.dummy.DummyContent.DummyItem;
 import ca.etsmtl.gti785.peer.util.DividerItemDecoration;
 
 public class PeersFragment extends Fragment {
 
-    // TODO: Customize parameter argument names
-    private static final String ARG_COLUMN_COUNT = "column-count";
-    // TODO: Customize parameters
-    private int mColumnCount = 1;
+    private PeersFragmentListener listener;
 
-    private OnListFragmentInteractionListener listener;
+    private List<PeerEntity> peers = new ArrayList<>();
+    private PeersRecyclerViewAdapter adapter;
 
-//    public PeersFragment() {
-//    }
-
-    // TODO: Customize parameter initialization
     public static PeersFragment newInstance() {
-        PeersFragment fragment = new PeersFragment();
+        return new PeersFragment();
+    }
 
-//        Bundle args = new Bundle();
-//        args.putInt(ARG_COLUMN_COUNT, columnCount);
-//        fragment.setArguments(args);
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
 
-        return fragment;
+        if (context instanceof PeersFragmentListener) {
+            listener = (PeersFragmentListener) context;
+        } else {
+            throw new RuntimeException(context.toString() + " must implement FilesFragmentListener.");
+        }
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-//        if (getArguments() != null) {
-//            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
-//        }
+        adapter = new PeersRecyclerViewAdapter(peers, listener);
     }
 
     @Override
@@ -58,32 +63,57 @@ public class PeersFragment extends Fragment {
             RecyclerView recyclerView = (RecyclerView) view;
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.addItemDecoration(new DividerItemDecoration(context));
-            recyclerView.setAdapter(new PeersRecyclerViewAdapter(DummyContent.ITEMS, listener));
+            recyclerView.setAdapter(adapter);
+
+            ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+                @Override
+                public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                    return false;
+                }
+                @Override
+                public void onSwiped(RecyclerView.ViewHolder viewHolder, int swipeDir) {
+                    PeersRecyclerViewAdapter.ViewHolder holder = (PeersRecyclerViewAdapter.ViewHolder) viewHolder;
+
+                    if (listener != null) {
+                        listener.onPeerEntityDismiss(holder.peer);
+                    }
+
+                    // FIXME
+//                    peers.remove(holder.peer);
+//                    adapter.notifyDataSetChanged();
+                }
+            };
+            ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
+            itemTouchHelper.attachToRecyclerView(recyclerView);
         }
 
         return view;
     }
 
+    @Override
+    public void onDetach() {
+        super.onDetach();
 
-//    @Override
-//    public void onAttach(Context context) {
-//        super.onAttach(context);
-//        if (context instanceof OnListFragmentInteractionListener) {
-//            listener = (OnListFragmentInteractionListener) context;
-//        } else {
-//            throw new RuntimeException(context.toString()
-//                    + " must implement OnListFragmentInteractionListener");
-//        }
-//    }
+        listener = null;
+    }
 
-//    @Override
-//    public void onDetach() {
-//        super.onDetach();
-//        listener = null;
-//    }
+    public void updateDataSet(PeerRepository peerRepository) {
+        peers.clear();
+        peers.addAll(peerRepository.getAll());
 
-    public interface OnListFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onListFragmentInteraction(DummyItem item);
+        Collections.sort(peers);
+
+        Gson gson = new Gson();
+        Log.d("PeersFragment", "updateDataSet: " + gson.toJson(peers));
+
+        if (adapter != null) {
+            Log.d("PeersFragment", "updateDataSet: updating");
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    public interface PeersFragmentListener {
+        void onPeerEntityClick(PeerEntity peer);
+        void onPeerEntityDismiss(PeerEntity peer);
     }
 }
