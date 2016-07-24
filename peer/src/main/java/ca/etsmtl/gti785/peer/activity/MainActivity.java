@@ -40,12 +40,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import ca.etsmtl.gti785.lib.entity.EventEntity;
-import ca.etsmtl.gti785.lib.entity.FileEntity;
-import ca.etsmtl.gti785.lib.entity.PeerEntity;
-import ca.etsmtl.gti785.lib.service.PeerService;
-import ca.etsmtl.gti785.lib.service.PeerService.PeerServiceBinder;
-import ca.etsmtl.gti785.lib.service.PeerService.PeerServiceListener;
+import com.pgrenaud.android.p2p.entity.EventEntity;
+import com.pgrenaud.android.p2p.entity.FileEntity;
+import com.pgrenaud.android.p2p.entity.PeerEntity;
+import com.pgrenaud.android.p2p.helper.ApiEndpoints;
+import com.pgrenaud.android.p2p.service.PeerService;
+import com.pgrenaud.android.p2p.service.PeerService.PeerServiceBinder;
+import com.pgrenaud.android.p2p.service.PeerService.PeerServiceListener;
 import ca.etsmtl.gti785.peer.fragment.FilesFragment;
 import ca.etsmtl.gti785.peer.fragment.FilesFragment.FilesFragmentListener;
 import ca.etsmtl.gti785.peer.fragment.PeerFilesFragment;
@@ -87,8 +88,6 @@ public class MainActivity extends AppCompatActivity
     private int nextPeerId = Menu.FIRST;
     private boolean bound = false;
 
-//    private PeerRepository peerRepository = new PeerRepository(); // FIXME
-
     private ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -121,16 +120,6 @@ public class MainActivity extends AppCompatActivity
     };
 
     private PeerServiceListener listener = new PeerServiceListener() {
-        @Override
-        public void onServerStart(PeerEntity peerEntity) {
-
-        }
-
-        @Override
-        public void onServerError(String message) {
-
-        }
-
         @Override
         public void onPeerConnection(PeerEntity peerEntity) {
             runOnUiThread(new Runnable() {
@@ -174,14 +163,7 @@ public class MainActivity extends AppCompatActivity
                 }
             });
         }
-
-        @Override
-        public void onPeerUpdate(PeerEntity peerEntity) {
-
-        }
     };
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -396,6 +378,9 @@ public class MainActivity extends AppCompatActivity
 
                     PeerFilesFragment peerFilesFragment = PeerFilesFragment.newInstance(peer);
                     getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, peerFilesFragment).commit();
+
+                    peer.updateAccessedAt();
+                    peersFragment.updateDataSet(service.getPeerRepository());
                 }
             }
 
@@ -520,12 +505,23 @@ public class MainActivity extends AppCompatActivity
             service.getPeerRepository().remove(peer);
 
             peersFragment.updateDataSet(service.getPeerRepository());
+
+            SubMenu submenu = navigationView.getMenu().findItem(R.id.nav_peers_submenu).getSubMenu();
+            Integer itemId = mapPeerToItem.get(peer.getUUID());
+
+            if (itemId != null) {
+                mapPeerToItem.remove(peer.getUUID());
+                mapItemToPeer.remove(itemId);
+
+                submenu.removeItem(itemId);
+            }
         }
     }
 
     @Override
     public void onDownloadImageClick(FileEntity file, String host) {
-        Uri uri = Uri.parse("http://" + host + "/api/v1/file/" + file.getUuid().toString());
+//        Uri uri = Uri.parse("http://" + host + "/api/v1/file/" + file.getUuid().toString());
+        Uri uri = Uri.parse(ApiEndpoints.getFileDownloadUri(host, file.getUuid().toString()));
 
         DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         DownloadManager.Request request = new DownloadManager.Request(uri);

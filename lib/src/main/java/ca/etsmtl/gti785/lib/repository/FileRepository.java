@@ -29,13 +29,16 @@ public class FileRepository {
         return files.values();
     }
 
-    public void add(FileEntity file) {
-        files.put(file.getUuid(), file);
+    public void add(FileEntity fileEntity) {
+        files.put(fileEntity.getUuid(), fileEntity);
     }
 
     public void addAll(String path) {
-        File f = new File(path);
-        File[] files = f.listFiles();
+        addAll(new File(path));
+    }
+
+    public void addAll(File directory) {
+        File[] files = directory.listFiles();
 
         for (File file : files) {
             if (file.isFile() && !file.isHidden()) {
@@ -44,8 +47,8 @@ public class FileRepository {
         }
     }
 
-    public void remove(FileEntity file) {
-        files.remove(file.getUuid());
+    public void remove(FileEntity fileEntity) {
+        files.remove(fileEntity.getUuid());
     }
 
     public void removeAll() {

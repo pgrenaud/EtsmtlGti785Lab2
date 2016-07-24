@@ -4,7 +4,12 @@ import android.location.Location;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Locale;
+
 public class LocationEntity {
+
+    private static final String TO_STRING_FORMAT = "[%f, %f]";
+
     @SerializedName("lat")
     private Double latitude;
     @SerializedName("lng")
@@ -49,5 +54,10 @@ public class LocationEntity {
         Location.distanceBetween(startLatitude, startLongitude, endLatitude, endLongitude, results);
 
         return results[0];
+    }
+
+    @Override
+    public String toString() {
+        return String.format(Locale.getDefault(), TO_STRING_FORMAT, latitude, longitude);
     }
 }

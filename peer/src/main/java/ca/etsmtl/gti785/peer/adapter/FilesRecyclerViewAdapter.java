@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import java.util.List;
 
-import ca.etsmtl.gti785.lib.entity.FileEntity;
+import com.pgrenaud.android.p2p.entity.FileEntity;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.fragment.FilesFragment.FilesFragmentListener;
 

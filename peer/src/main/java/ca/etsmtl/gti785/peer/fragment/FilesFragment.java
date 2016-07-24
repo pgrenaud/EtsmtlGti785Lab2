@@ -17,9 +17,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import ca.etsmtl.gti785.lib.entity.FileEntity;
-import ca.etsmtl.gti785.lib.repository.FileRepository;
-import ca.etsmtl.gti785.lib.service.PeerService;
+import com.pgrenaud.android.p2p.entity.FileEntity;
+import com.pgrenaud.android.p2p.repository.FileRepository;
+import com.pgrenaud.android.p2p.service.PeerService;
 import ca.etsmtl.gti785.peer.activity.MainActivity;
 import ca.etsmtl.gti785.peer.adapter.FilesRecyclerViewAdapter;
 import ca.etsmtl.gti785.peer.R;

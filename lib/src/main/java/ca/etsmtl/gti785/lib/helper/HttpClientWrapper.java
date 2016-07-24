@@ -1,4 +1,4 @@
-package ca.etsmtl.gti785.lib.web;
+package ca.etsmtl.gti785.lib.helper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,7 +8,6 @@ import java.net.URISyntaxException;
 import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.client.methods.CloseableHttpResponse;
 import cz.msebera.android.httpclient.client.methods.HttpGet;
-import cz.msebera.android.httpclient.client.utils.URIBuilder;
 import cz.msebera.android.httpclient.impl.client.CloseableHttpClient;
 import cz.msebera.android.httpclient.impl.client.HttpClients;
 import cz.msebera.android.httpclient.util.EntityUtils;
@@ -17,23 +16,13 @@ public class HttpClientWrapper {
 
     private final CloseableHttpClient client;
 
-    private String host;
-
-    public HttpClientWrapper(String host) {
-        this.host = host;
-
+    public HttpClientWrapper() {
         client = HttpClients.createDefault();
     }
 
-    public void performHttpGet(String path, HttpResponseCallback callback) {
+    public void performHttpGet(String uri, HttpResponseCallback callback) {
         try {
-            URI uri = new URIBuilder()
-                .setScheme("http")
-                .setHost(host)
-                .setPath(path)
-                .build();
-
-            HttpGet get = new HttpGet(uri);
+            HttpGet get = new HttpGet(new URI(uri));
             CloseableHttpResponse response = client.execute(get);
 
             int status = response.getStatusLine().getStatusCode();
@@ -52,15 +41,9 @@ public class HttpClientWrapper {
         }
     }
 
-    public void performBinaryHttpGet(String path, BinaryHttpResponseCallback callback) {
+    public void performBinaryHttpGet(String uri, BinaryHttpResponseCallback callback) {
         try {
-            URI uri = new URIBuilder()
-                .setScheme("http")
-                .setHost(host)
-                .setPath(path)
-                .build();
-
-            HttpGet get = new HttpGet(uri);
+            HttpGet get = new HttpGet(new URI(uri));
             CloseableHttpResponse response = client.execute(get);
 
             int status = response.getStatusLine().getStatusCode();

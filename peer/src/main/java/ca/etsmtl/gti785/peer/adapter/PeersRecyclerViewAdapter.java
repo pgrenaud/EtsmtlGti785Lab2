@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import ca.etsmtl.gti785.lib.entity.PeerEntity;
+import com.pgrenaud.android.p2p.entity.PeerEntity;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment.PeersFragmentListener;
 

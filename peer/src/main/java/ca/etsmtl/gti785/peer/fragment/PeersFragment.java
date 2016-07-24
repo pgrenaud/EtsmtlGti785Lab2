@@ -17,8 +17,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import ca.etsmtl.gti785.lib.entity.PeerEntity;
-import ca.etsmtl.gti785.lib.repository.PeerRepository;
+import com.pgrenaud.android.p2p.entity.PeerEntity;
+import com.pgrenaud.android.p2p.repository.PeerRepository;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.adapter.PeersRecyclerViewAdapter;
 import ca.etsmtl.gti785.peer.util.DividerItemDecoration;

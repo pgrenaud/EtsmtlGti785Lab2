@@ -16,6 +16,7 @@ public class PeerEntity implements Comparable<PeerEntity> {
     private static final String NAME_UUID_FORMAT = "%s:%s";
     private static final String ADDRESS_FORMAT = "%s:%s";
     private static final String ACCESSED_AT_FORMAT = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS";
+    private static final String TO_STRING_FORMAT = "%S (%s)";
 
     // Do not serialize accessedAt or online
     private transient Date accessedAt;
@@ -77,8 +78,13 @@ public class PeerEntity implements Comparable<PeerEntity> {
         return accessedAt;
     }
 
+    @Nullable
     public String getFormatedAccessedAt() {
-        return String.format(Locale.getDefault(), ACCESSED_AT_FORMAT, accessedAt);
+        if (accessedAt != null) {
+            return String.format(Locale.getDefault(), ACCESSED_AT_FORMAT, accessedAt);
+        } else {
+            return null;
+        }
     }
 
     public void updateAccessedAt() {
@@ -91,6 +97,11 @@ public class PeerEntity implements Comparable<PeerEntity> {
 
     public void setOnline(boolean online) {
         this.online = online;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(Locale.getDefault(), TO_STRING_FORMAT, uuid, displayName);
     }
 
     @Override

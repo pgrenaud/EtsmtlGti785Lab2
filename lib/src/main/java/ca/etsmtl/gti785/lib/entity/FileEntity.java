@@ -6,9 +6,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 import java.io.File;
+import java.util.Locale;
 import java.util.UUID;
 
 public class FileEntity implements Comparable<FileEntity> {
+
+    private static final String TO_STRING_FORMAT = "%S (%s)";
 
     // Do not serialize file
     private transient File file;
@@ -57,6 +60,11 @@ public class FileEntity implements Comparable<FileEntity> {
      */
     public Long getSize() {
         return size;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(Locale.getDefault(), TO_STRING_FORMAT, uuid, name);
     }
 
     @Override

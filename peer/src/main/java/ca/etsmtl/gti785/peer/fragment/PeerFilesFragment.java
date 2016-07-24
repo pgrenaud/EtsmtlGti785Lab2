@@ -24,14 +24,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
-import ca.etsmtl.gti785.lib.entity.FileEntity;
-import ca.etsmtl.gti785.lib.entity.PeerEntity;
-import ca.etsmtl.gti785.lib.repository.FileRepository;
-import ca.etsmtl.gti785.lib.web.HttpClientWrapper;
-import ca.etsmtl.gti785.lib.web.HttpClientWrapper.HttpResponseCallback;
-import ca.etsmtl.gti785.lib.web.HttpClientWrapper.BinaryHttpResponseCallback;
+import com.pgrenaud.android.p2p.entity.FileEntity;
+import com.pgrenaud.android.p2p.entity.PeerEntity;
+import com.pgrenaud.android.p2p.helper.ApiEndpoints;
+import com.pgrenaud.android.p2p.repository.FileRepository;
+import com.pgrenaud.android.p2p.helper.HttpClientWrapper;
+import com.pgrenaud.android.p2p.helper.HttpClientWrapper.HttpResponseCallback;
+import com.pgrenaud.android.p2p.helper.HttpClientWrapper.BinaryHttpResponseCallback;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.adapter.PeerFilesRecyclerViewAdapter;
 import ca.etsmtl.gti785.peer.util.DividerItemDecoration;
@@ -162,10 +162,12 @@ public class PeerFilesFragment extends Fragment {
 
         @Override
         protected Void doInBackground(String... strings) {
-            String filesUrl = "/api/v1/files";
+//            String filesUrl = "/api/v1/files";
+            String filesUrl = ApiEndpoints.getFileListUri(strings[0]);
 
             if (strings.length == 1) {
-                client = new HttpClientWrapper(strings[0]);
+//                client = new HttpClientWrapper(strings[0]);
+                client = new HttpClientWrapper();
 
                 client.performHttpGet(filesUrl, new HttpResponseCallback() {
                     @Override
@@ -208,75 +210,75 @@ public class PeerFilesFragment extends Fragment {
         }
     }
 
-    private class DownloadFileAsyncTask extends AsyncTask<String, Void, Void> {
-
-        private HttpClientWrapper client;
-        private Collection<FileEntity> results;
-
-        @Override
-        protected void onPreExecute() {
-            Log.d("ListFileAsyncTask", "onPreExecute");
-
-            toolbarProgressbar.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected Void doInBackground(final String... strings) {
-            if (strings.length == 3) {
-                String filesUrl = "/api/v1/file/" + strings[1];
-
-                client = new HttpClientWrapper(strings[0]);
-
-                client.performBinaryHttpGet(filesUrl, new BinaryHttpResponseCallback() {
-                    @Override
-                    public void onHttpResponse(int status, InputStream input) {
-                        Log.d("ListFileAsyncTask", "onHttpResponse: " + status);
-
-                        if (status == 200) {
-                            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), strings[2]); // FIXME
-
-                            try {
-                                FileOutputStream output = new FileOutputStream(file);
-
-                                byte[] buffer = new byte[1024 * 4];
-                                int len;
-
-                                while ((len = input.read(buffer)) != -1) {
-                                    output.write(buffer, 0, len);
-                                }
-
-                                input.close();
-                                output.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                    @Override
-                    public void onException(Exception exception) {
-                        if (exception instanceof HttpHostConnectException) {
-                            Log.d("ListFileAsyncTask", "onException: " + exception.getMessage());
-                        } else {
-                            Log.d("ListFileAsyncTask", "onException", exception);
-                        }
-                    }
-                });
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            Log.d("ListFileAsyncTask", "onPostExecute");
-
-            toolbarProgressbar.setVisibility(View.GONE);
-
-            if (results != null) {
-                updateDataSet(results);
-            }
-        }
-    }
+//    private class DownloadFileAsyncTask extends AsyncTask<String, Void, Void> {
+//
+//        private HttpClientWrapper client;
+//        private Collection<FileEntity> results;
+//
+//        @Override
+//        protected void onPreExecute() {
+//            Log.d("ListFileAsyncTask", "onPreExecute");
+//
+//            toolbarProgressbar.setVisibility(View.VISIBLE);
+//        }
+//
+//        @Override
+//        protected Void doInBackground(final String... strings) {
+//            if (strings.length == 3) {
+//                String filesUrl = "/api/v1/file/" + strings[1];
+//
+//                client = new HttpClientWrapper(strings[0]);
+//
+//                client.performBinaryHttpGet(filesUrl, new BinaryHttpResponseCallback() {
+//                    @Override
+//                    public void onHttpResponse(int status, InputStream input) {
+//                        Log.d("ListFileAsyncTask", "onHttpResponse: " + status);
+//
+//                        if (status == 200) {
+//                            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), strings[2]); // FIXME
+//
+//                            try {
+//                                FileOutputStream output = new FileOutputStream(file);
+//
+//                                byte[] buffer = new byte[1024 * 4];
+//                                int len;
+//
+//                                while ((len = input.read(buffer)) != -1) {
+//                                    output.write(buffer, 0, len);
+//                                }
+//
+//                                input.close();
+//                                output.close();
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }
+//                    @Override
+//                    public void onException(Exception exception) {
+//                        if (exception instanceof HttpHostConnectException) {
+//                            Log.d("ListFileAsyncTask", "onException: " + exception.getMessage());
+//                        } else {
+//                            Log.d("ListFileAsyncTask", "onException", exception);
+//                        }
+//                    }
+//                });
+//            }
+//
+//            return null;
+//        }
+//
+//        @Override
+//        protected void onPostExecute(Void aVoid) {
+//            Log.d("ListFileAsyncTask", "onPostExecute");
+//
+//            toolbarProgressbar.setVisibility(View.GONE);
+//
+//            if (results != null) {
+//                updateDataSet(results);
+//            }
+//        }
+//    }
 
     /**
      * This interface must be implemented by activities that contain this

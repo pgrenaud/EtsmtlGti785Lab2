@@ -1,16 +1,14 @@
-package ca.etsmtl.gti785.lib.handler;
+package ca.etsmtl.gti785.lib.web;
+
+import static ca.etsmtl.gti785.lib.web.RoutableWebServer.sendError;
+import static ca.etsmtl.gti785.lib.web.RoutableWebServer.sendEvent;
+import static ca.etsmtl.gti785.lib.web.RoutableWebServer.sendJSON;
+import static ca.etsmtl.gti785.lib.web.RoutableWebServer.sendServerError;
+import static ca.etsmtl.gti785.lib.web.RoutableWebServer.sendStream;
+import static ca.etsmtl.gti785.lib.web.RoutableWebServer.sendTimeout;
 
 import android.util.Log;
 
-import static ca.etsmtl.gti785.lib.web.WebServer.sendEmpty;
-import static ca.etsmtl.gti785.lib.web.WebServer.sendError;
-import static ca.etsmtl.gti785.lib.web.WebServer.sendEvent;
-import static ca.etsmtl.gti785.lib.web.WebServer.sendJSON;
-import static ca.etsmtl.gti785.lib.web.WebServer.sendServerError;
-import static ca.etsmtl.gti785.lib.web.WebServer.sendStream;
-import static ca.etsmtl.gti785.lib.web.WebServer.sendTimeout;
-
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -18,15 +16,16 @@ import java.util.concurrent.TimeUnit;
 import ca.etsmtl.gti785.lib.entity.EventEntity;
 import ca.etsmtl.gti785.lib.entity.FileEntity;
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
-import ca.etsmtl.gti785.lib.hive.PeerHive;
+import ca.etsmtl.gti785.lib.peering.PeerHive;
 import ca.etsmtl.gti785.lib.repository.FileRepository;
 import ca.etsmtl.gti785.lib.repository.PeerRepository;
 import ca.etsmtl.gti785.lib.repository.QueueRepository;
+
 import fi.iki.elonen.NanoHTTPD.Response;
 
 public class RequestHandler {
 
-    private static final long REQUEST_TIMEOUT = 60; // FIXME: Change for 60
+    private static final long REQUEST_TIMEOUT = 60;
 
     private final QueueRepository queueRepository;
     private final FileRepository fileRepository;
@@ -41,23 +40,20 @@ public class RequestHandler {
     }
 
     public Response handlePolling(UUID uuid) {
-        Log.d("RequestHandler", "handlePolling: " + uuid.toString());
-        Log.d("RequestHandler", "handlePolling: " + peerRepository.encode());
-
         PeerEntity peer = peerRepository.get(uuid);
 
         if (peer != null) {
-            Log.d("RequestHandler", "handlePolling: " + peer.getDisplayName());
+            // Try to start worker if not already running
             peerHive.spawnWorker(peer);
         }
 
         BlockingQueue<EventEntity> queue = queueRepository.getOrCreate(uuid);
 
         try {
-            EventEntity event = queue.poll(REQUEST_TIMEOUT, TimeUnit.SECONDS); // FIXME
+            EventEntity event = queue.poll(REQUEST_TIMEOUT, TimeUnit.SECONDS);
 
             if (event != null) {
-                Log.d("RequestHandler", "handlePolling: event " + event.encode());
+                Log.d("RequestHandler", "Handling event " + event.getEvent());
 
                 return sendEvent(event);
             } else {
@@ -69,9 +65,7 @@ public class RequestHandler {
     }
 
     public Response handleFileList() {
-        Collection<FileEntity> files = fileRepository.getAll();
-
-        return sendJSON(files);
+        return sendJSON(fileRepository.encode());
     }
 
     public Response handleFileRequest(UUID uuid) {
@@ -80,7 +74,7 @@ public class RequestHandler {
         if (file != null) {
             return sendStream(file.getFile());
         } else {
-            return sendError("Could not find file with UUID '" + uuid.toString().toUpperCase() + "'.");
+            return sendError("Could not find file with UUID '" + uuid + "'.");
         }
     }
 }

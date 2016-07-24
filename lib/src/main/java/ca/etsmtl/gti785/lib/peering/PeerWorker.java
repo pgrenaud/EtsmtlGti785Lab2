@@ -1,4 +1,4 @@
-package ca.etsmtl.gti785.lib.runnable;
+package ca.etsmtl.gti785.lib.peering;
 
 import android.util.Log;
 
@@ -8,9 +8,10 @@ import java.io.IOException;
 
 import ca.etsmtl.gti785.lib.entity.EventEntity;
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
-import ca.etsmtl.gti785.lib.hive.PeerHive;
-import ca.etsmtl.gti785.lib.web.HttpClientWrapper;
-import ca.etsmtl.gti785.lib.web.HttpClientWrapper.HttpResponseCallback;
+import ca.etsmtl.gti785.lib.helper.ApiEndpoints;
+import ca.etsmtl.gti785.lib.helper.HttpClientWrapper;
+import ca.etsmtl.gti785.lib.helper.HttpClientWrapper.HttpResponseCallback;
+
 import cz.msebera.android.httpclient.conn.HttpHostConnectException;
 
 public class PeerWorker implements Runnable {
@@ -29,10 +30,10 @@ public class PeerWorker implements Runnable {
         this.hive = hive;
         this.peer = peer;
 
-        client = new HttpClientWrapper(peer.getHost());
+        client = new HttpClientWrapper();
 
-        pingUrl = "/api/v1/ping";
-        pollingUrl = "/api/v1/polling/" + hive.getService().getSelfPeerEntity().getUUID().toString();
+        pingUrl = ApiEndpoints.getPingUri(peer);
+        pollingUrl = ApiEndpoints.getPollingUri(peer, hive.getService().getSelfPeerEntity());
 
         running = false;
         available = false;
@@ -42,30 +43,28 @@ public class PeerWorker implements Runnable {
     public void run() {
         running = true;
 
-        Log.d("PeerWorker", "starting worker: " + peer.getDisplayName());
-        Log.d("PeerWorker", "starting worker: " + peer.getUUID().toString());
+        Log.d("PeerWorker", "Starting worker " + peer);
 
         try {
-            // TODO
             client.performHttpGet(pingUrl, new HttpResponseCallback() {
                 @Override
                 public void onHttpResponse(int status, String content) {
-                    Log.d("PeerWorker", "ping: onHttpResponse: " + status);
-
                     if (status == 200) {
-                        Log.d("PeerWorker", peer.getDisplayName() + " is online");
+                        Log.d("PeerWorker", "Peer " + peer  + " is online");
 
                         available = true;
                         peer.setOnline(true);
                         notifyConnectionListener();
+                    } else {
+                        Log.e("PeerWorker", "ping: unknown status: " + status);
                     }
                 }
                 @Override
                 public void onException(Exception exception) {
                     if (exception instanceof HttpHostConnectException) {
-                        Log.d("PeerWorker", "ping: " + exception.getMessage());
+                        Log.d("PeerWorker", exception.getMessage());
                     } else {
-                        Log.d("PeerWorker", "ping: onException", exception);
+                        Log.e("PeerWorker", "ping: onException", exception);
                     }
                 }
             });
@@ -74,13 +73,9 @@ public class PeerWorker implements Runnable {
                 client.performHttpGet(pollingUrl, new HttpResponseCallback() {
                     @Override
                     public void onHttpResponse(int status, String content) {
-                        Log.d("PeerWorker", "polling");
-
                         if (status == 408) {
                             // Polling timeout
                         } else if (status == 200) {
-                            Log.d("PeerWorker", "polling: " + content);
-
                             try {
                                 EventEntity event = EventEntity.decode(content);
 
@@ -111,7 +106,7 @@ public class PeerWorker implements Runnable {
                     @Override
                     public void onException(Exception exception) {
                         if (exception instanceof HttpHostConnectException) {
-                            Log.d("PeerWorker", "polling: " + exception.getMessage());
+                            Log.d("PeerWorker", exception.getMessage());
                         } else {
                             Log.e("PeerWorker", "polling: onException", exception);
                         }
@@ -120,6 +115,8 @@ public class PeerWorker implements Runnable {
                     }
                 });
             }
+
+            Log.d("PeerWorker", "Peer " + peer  + " is offline");
 
             available = false;
             peer.setOnline(false);
@@ -134,19 +131,9 @@ public class PeerWorker implements Runnable {
             return; // Already stopped, nothing to do.
         }
 
-        Log.d("PeerWorker", "stopping worker: " + peer.getDisplayName());
+        Log.d("PeerWorker", "Stopping worker " + peer);
 
         running = false;
-
-        if (available) {
-            Log.d("PeerWorker", "worker was not stopped properly");
-
-            available = false;
-            peer.setOnline(false);
-            notifyConnectionListener();
-        }
-
-        // TODO: Cleanup
 
         try {
             client.close();
@@ -165,18 +152,24 @@ public class PeerWorker implements Runnable {
 
     private void notifyConnectionListener() {
         if (hive.getService().getListener() != null) {
+            Log.d("PeerWorker", "Invoking listener onPeerConnection()");
+
             hive.getService().getListener().onPeerConnection(peer);
         }
     }
 
     private void notifyDisplayNameListener() {
         if (hive.getService().getListener() != null) {
+            Log.d("PeerWorker", "Invoking listener onPeerDisplayNameUpdate()");
+
             hive.getService().getListener().onPeerDisplayNameUpdate(peer);
         }
     }
 
     private void notifyLocationListener() {
         if (hive.getService().getListener() != null) {
+            Log.d("PeerWorker", "Invoking listener onPeerLocationUpdate()");
+
             hive.getService().getListener().onPeerLocationUpdate(peer);
         }
     }

@@ -1,1 +1,2 @@
-include ':app', ':peer', ':lib'
+//include ':app', ':peer', ':lib'
+include ':peer'

@@ -10,29 +10,43 @@ http://stackoverflow.com/questions/3841317/how-to-see-if-wifi-is-connected-in-an
 http://stackoverflow.com/a/7908446
 http://stackoverflow.com/a/23686083
 
+Exclude partial fields GSON:
+
+http://www.javacreed.com/gson-annotations-example/
+https://google.github.io/gson/apidocs/com/google/gson/GsonBuilder.html
+
 
 * According to this link, there is no timeout by default:
 
     https://hc.apache.org/httpcomponents-client-ga/httpclient/xref/org/apache/http/client/config/RequestConfig.html
 
-TODO:
+TODO lib:
 
-* Event to update display name
-* Event to update location
-* Class to handle GET file list and file download
+* Add request profiling to WebServer using format "GET /api/polling/ok 200 5019.171 ms - 17"
 * Sync state of peer on event
 * Prevent server from starting if network is not available
 * Remove sendJSON() and add encode() to *Repository
 * Wrap all listener call in try-catch block
 * Give method to check server status and error message on service
-* Fixe last accessed time
-
+* Fix last accessed time (we need to serialize it when saving peers but not sending peers)
 * NFC/Beaming
+
+TODO self:
+
+* Add app icon
+* Prevent click on peer when offline
 * Remove peer from list
 * List files from peer
 * Download file from peer
 * Notification when downloading/finished
 * Remove open directory button from menu and use a fab instead
+* For PeerFilesFragment, use encode()/decode() to get complete PeerEntity object instead of just the host
 
-4: b99861aa-ad01-3f21-8c8d-26f61441d10f
-5: cc63de94-746f-3bbd-81b8-834c67bead80
+DONE:
+
+* Event to update display name
+* Event to update location
+
+WONT FIX:
+
+* Class to handle GET file list and file download

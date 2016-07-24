@@ -1,4 +1,4 @@
-package ca.etsmtl.gti785.lib.hive;
+package ca.etsmtl.gti785.lib.peering;
 
 import android.util.Log;
 
@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 import ca.etsmtl.gti785.lib.entity.PeerEntity;
 import ca.etsmtl.gti785.lib.repository.PeerRepository;
-import ca.etsmtl.gti785.lib.runnable.PeerWorker;
 import ca.etsmtl.gti785.lib.service.PeerService;
 
 public class PeerHive {
@@ -31,39 +30,46 @@ public class PeerHive {
         workers = new ConcurrentHashMap<>();
     }
 
-    public void spawnWorker(PeerEntity peer) {
-        Log.d("PeerHive", "spawnWorker: " + peer.getDisplayName());
-
-        PeerWorker worker = workers.get(peer.getUUID());
+    /**
+     * Start worker for specified PeerEntity if not already started.
+     *
+     * @param peerEntity PeerEntity associated with the worker.
+     */
+    public void spawnWorker(PeerEntity peerEntity) {
+        PeerWorker worker = workers.get(peerEntity.getUUID());
 
         if (worker == null || !worker.isRunning()) {
             try {
-                worker = new PeerWorker(this, peer);
+                worker = new PeerWorker(this, peerEntity);
 
-                workers.put(peer.getUUID(), worker);
+                workers.put(peerEntity.getUUID(), worker);
                 pool.submit(worker);
 
-                Log.d("PeerHive", "spawnWorker: added peer worker " + peer.getDisplayName());
+                Log.d("PeerHive", "Spawned worker for peer " + peerEntity);
             } catch (RejectedExecutionException e) {
                 Log.e("PeerHive", "Exception occurred while submitting new peer worker to thread pool", e);
             }
         }
     }
 
-    public void killWorker(PeerEntity peer) {
-        Log.d("PeerHive", "killWorker: " + peer.getDisplayName());
-
-        PeerWorker worker = workers.get(peer.getUUID());
+    /**
+     * Stop worker for specified PeerEntity if currently running.
+     *
+     * @param peerEntity PeerEntity associated with the worker.
+     */
+    public void killWorker(PeerEntity peerEntity) {
+        PeerWorker worker = workers.get(peerEntity.getUUID());
 
         if (worker != null) {
             worker.stop();
             workers.remove(worker.getPeerEntity().getUUID());
+
+            Log.d("PeerHive", "Killed worker for peer " + peerEntity);
         }
     }
 
     /**
      * Synchronizing peer hive by starting missing workers and stopping unneeded ones.
-     * Call that method anytime you add or remove a peer from the repository.
      */
     public void sync() {
         // Stopping workers whom peer has been removed
@@ -73,30 +79,20 @@ public class PeerHive {
             if (peer == null) {
                 worker.stop();
                 workers.remove(worker.getPeerEntity().getUUID());
+
+                Log.d("PeerHive", "Killed worker for peer " + worker.getPeerEntity());
             }
         }
 
         // Starting workers whom peer has been added
         for (PeerEntity peer : peers.getAll()) {
             spawnWorker(peer);
-
-//            PeerWorker worker = workers.get(peer.getUUID());
-//
-//            if (worker == null) {
-//                try {
-//                    worker = new PeerWorker(this, peer);
-//
-//                    workers.put(peer.getUUID(), worker);
-//                    pool.submit(worker);
-//
-//                    Log.d("PeerHive", "sync: added peer worker " + peer.getDisplayName());
-//                } catch (RejectedExecutionException e) {
-//                    Log.e("PeerHive", "Exception occurred while submitting new peer worker to thread pool", e);
-//                }
-//            }
         }
     }
 
+    /**
+     * Internal API
+     */
     public void stop() {
         Log.d("PeerHive", "Stopping PeerHive");
 
@@ -111,6 +107,8 @@ public class PeerHive {
         } catch (InterruptedException e) {
             Log.e("PeerHive", "Exception occurred while waiting thread pool to terminate", e);
         }
+
+        Log.d("PeerHive", "PeerHive stopped");
     }
 
     public PeerService getService() {

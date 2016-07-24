@@ -28,24 +28,25 @@ public class PeerRepository {
         return peers.values();
     }
 
-    public void add(PeerEntity peer) {
-        peers.put(peer.getUUID(), peer);
+    public void add(PeerEntity peerEntity) {
+        peers.put(peerEntity.getUUID(), peerEntity);
     }
 
     /**
+     * Add specified PeerEntity to the repository, or update its display name if it already exists.
      *
-     * @param peer
+     * @param peerEntity PeerEntity instance.
      * @return Returns true if the PeerEntity was added to the repository or false if it was updated.
      */
-    public boolean addOrUpdate(PeerEntity peer) {
-        PeerEntity localPeer = peers.get(peer.getUUID());
+    public boolean addOrUpdate(PeerEntity peerEntity) {
+        PeerEntity peer = peers.get(peerEntity.getUUID());
 
-        if (localPeer == null) {
-            peers.put(peer.getUUID(), peer);
+        if (peer == null) {
+            peers.put(peerEntity.getUUID(), peerEntity);
 
             return true;
         } else {
-            localPeer.setDisplayName(peer.getDisplayName());
+            peer.setDisplayName(peerEntity.getDisplayName());
 
             return false;
         }
@@ -57,8 +58,8 @@ public class PeerRepository {
         }
     }
 
-    public void remove(PeerEntity peer) {
-        peers.remove(peer.getUUID());
+    public void remove(PeerEntity peerEntity) {
+        peers.remove(peerEntity.getUUID());
     }
 
     public void removeAll() {

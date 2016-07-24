@@ -21,9 +21,9 @@ import android.widget.TextView;
 import java.net.InetAddress;
 import java.util.Collections;
 
-import ca.etsmtl.gti785.lib.entity.PeerEntity;
-import ca.etsmtl.gti785.lib.repository.FileRepository;
-import ca.etsmtl.gti785.lib.service.PeerService;
+import com.pgrenaud.android.p2p.entity.PeerEntity;
+import com.pgrenaud.android.p2p.repository.FileRepository;
+import com.pgrenaud.android.p2p.service.PeerService;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.util.QRCodeUtil;
 
@@ -139,6 +139,7 @@ public class ServerFragment extends Fragment {
 
             qrImage.setImageDrawable(null);
 
+            // FIXME: Remove accessedAt date from peer entity
             new BitmapAsyncTask().execute(peerEntity.encode());
         }
     }

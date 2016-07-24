@@ -13,7 +13,7 @@ import ca.etsmtl.gti785.lib.entity.EventEntity;
 
 public class QueueRepository {
 
-    private final Map<UUID, BlockingQueue<EventEntity>> queues; // TODO: Replace Object by Event or something
+    private final Map<UUID, BlockingQueue<EventEntity>> queues;
 
     public QueueRepository() {
         queues = new ConcurrentHashMap<>();
@@ -44,13 +44,9 @@ public class QueueRepository {
     }
 
     public void putAll(EventEntity event) {
-        Log.d("QueueRepository", "putAll: event " + event.encode());
-        Log.d("QueueRepository", "putAll: queues " + queues.size());
-
         for (BlockingQueue<EventEntity> queue : queues.values()) {
             try {
                 queue.put(event);
-                Log.d("QueueRepository", "putAll: queue");
             } catch (InterruptedException e) {
                 Log.e("QueueRepository", "Exception occurred while appending event to queue", e);
             }
