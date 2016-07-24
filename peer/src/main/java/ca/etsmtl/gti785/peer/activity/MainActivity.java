@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity
     private RelativeLayout contentLayout;
     private FloatingActionButton addFab;
     private FloatingActionButton editFab;
+    private FloatingActionButton dirFab;
     private NavigationView navigationView;
     private MenuItem previousMenuItem;
 
@@ -79,7 +80,6 @@ public class MainActivity extends AppCompatActivity
     private Map<Integer, UUID> mapItemToPeer = new HashMap<>();
     private Map<UUID, Integer> mapPeerToItem = new HashMap<>();
 
-    private boolean actionDirectoryVisible = false;
     private int nextPeerId = Menu.FIRST;
     private boolean bound = false;
 
@@ -229,6 +229,15 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        dirFab = (FloatingActionButton) findViewById(R.id.dir_fab);
+        dirFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                startActivityForResult(intent, DIRECTORY_REQUEST_CODE);
+            }
+        });
+
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
@@ -295,34 +304,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-
-        menu.findItem(R.id.action_directory).setVisible(actionDirectoryVisible);
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_directory) {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-            startActivityForResult(intent, DIRECTORY_REQUEST_CODE);
-
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         item.setCheckable(true);
         item.setChecked(true);
@@ -337,23 +318,23 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.nav_peers) {
             setTitle(R.string.activity_peers_title);
-            setActionDirectoryVisible(false);
             editFab.hide();
             addFab.show();
+            dirFab.hide();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, peersFragment).commit();
         } else if (id == R.id.nav_status) {
             setTitle(R.string.activity_status_title);
-            setActionDirectoryVisible(false);
             addFab.hide();
             editFab.show();
+            dirFab.hide();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, serverFragment).commit();
         } else if (id == R.id.nav_files) {
             setTitle(R.string.activity_files_title);
-            setActionDirectoryVisible(true);
             addFab.hide();
             editFab.hide();
+            dirFab.show();
 
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, filesFragment).commit();
         } else {
@@ -366,9 +347,9 @@ public class MainActivity extends AppCompatActivity
                     PeerEntity peer = service.getPeerRepository().get(uuid);
 
                     setTitle(item.getTitle());
-                    setActionDirectoryVisible(false);
                     addFab.hide();
                     editFab.hide();
+                    dirFab.hide();
 
                     PeerFilesFragment peerFilesFragment = PeerFilesFragment.newInstance(peer);
                     getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, peerFilesFragment).commit();
@@ -457,12 +438,6 @@ public class MainActivity extends AppCompatActivity
                 recreate();
             }
         }
-    }
-
-    public void setActionDirectoryVisible(boolean actionDirectoryVisible) {
-        this.actionDirectoryVisible = actionDirectoryVisible;
-
-        invalidateOptionsMenu();
     }
 
     @Override
