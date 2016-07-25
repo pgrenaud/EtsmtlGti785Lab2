@@ -37,7 +37,6 @@ public class ServerFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_server, container, false);
     }
 
@@ -52,17 +51,9 @@ public class ServerFragment extends Fragment {
             statusText = (TextView) view.findViewById(R.id.server_status_text);
             qrImage = (ImageView) view.findViewById(R.id.server_qr_image);
 
-
             if (peerEntity != null) {
-                updateDataSet(peerEntity);
+                onBindView();
             }
-
-            // FIXME
-//            if (qrBitmap != null) {
-//                qrImage.setImageBitmap(qrBitmap);
-//            } else {
-//                new BitmapAsyncTask().execute();
-//            }
         }
     }
 
@@ -70,24 +61,32 @@ public class ServerFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
 
-        // TODO: Clear all UI references
         nameText = null;
         statusText = null;
         qrImage = null;
     }
 
+    public void onBindView() {
+        nameText.setText(getString(R.string.server_peer_name, peerEntity.getDisplayName()));
+        statusText.setText(getString(R.string.server_peer_status, peerEntity.getIpAddress(), peerEntity.getPort()));
+
+        if (qrBitmap != null) {
+            qrImage.setImageBitmap(qrBitmap);
+        } else {
+            qrImage.setImageDrawable(null);
+        }
+    }
+
     public void updateDataSet(PeerEntity peerEntity) {
         this.peerEntity = peerEntity;
+        qrBitmap = null;
 
         if (isAdded()) {
-            nameText.setText(getString(R.string.server_peer_name, peerEntity.getDisplayName()));
-            statusText.setText(getString(R.string.server_peer_status, peerEntity.getIpAddress(), peerEntity.getPort()));
-
-            qrImage.setImageDrawable(null);
-
-            // FIXME: Remove accessedAt date from peer entity
-            new BitmapAsyncTask().execute(peerEntity.encode());
+            onBindView();
         }
+
+        // FIXME: Remove accessedAt date from peer entity
+        new BitmapAsyncTask().execute(peerEntity.encode());
     }
 
     // See: https://developer.android.com/training/displaying-bitmaps/cache-bitmap.html
@@ -96,13 +95,9 @@ public class ServerFragment extends Fragment {
         @Override
         protected Bitmap doInBackground(String... strings) {
             if (strings.length == 1) {
-                Log.d("BitmapAsyncTask", "generating image");
+                Log.d("BitmapAsyncTask", "doInBackground");
 
-                Bitmap bitmap = QRCodeUtil.generateBitmap(strings[0]);
-
-                Log.d("BitmapAsyncTask", "image generated");
-
-                return bitmap;
+                return QRCodeUtil.generateBitmap(strings[0]);
             }
 
             return null;
@@ -110,15 +105,13 @@ public class ServerFragment extends Fragment {
 
         @Override
         protected void onPostExecute(Bitmap bitmap) {
-            Log.d("BitmapAsyncTask", "setting image");
+            Log.d("BitmapAsyncTask", "onPostExecute");
 
             qrBitmap = bitmap;
 
             if (qrImage != null) {
                 qrImage.setImageBitmap(bitmap);
             }
-
-            Log.d("BitmapAsyncTask", "image set");
         }
 
     }

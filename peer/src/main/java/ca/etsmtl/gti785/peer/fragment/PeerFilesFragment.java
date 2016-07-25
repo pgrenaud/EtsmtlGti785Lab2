@@ -29,6 +29,7 @@ import java.util.List;
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.adapter.PeerFilesRecyclerViewAdapter;
 import ca.etsmtl.gti785.peer.util.DividerItemDecoration;
+
 import cz.msebera.android.httpclient.conn.HttpHostConnectException;
 
 public class PeerFilesFragment extends Fragment {
@@ -109,7 +110,6 @@ public class PeerFilesFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
 
-        // TODO: Clear all UI references
         toolbarProgressbar = null;
     }
 
@@ -190,76 +190,6 @@ public class PeerFilesFragment extends Fragment {
             }
         }
     }
-
-//    private class DownloadFileAsyncTask extends AsyncTask<String, Void, Void> {
-//
-//        private HttpClientWrapper client;
-//        private Collection<FileEntity> results;
-//
-//        @Override
-//        protected void onPreExecute() {
-//            Log.d("ListFileAsyncTask", "onPreExecute");
-//
-//            toolbarProgressbar.setVisibility(View.VISIBLE);
-//        }
-//
-//        @Override
-//        protected Void doInBackground(final String... strings) {
-//            if (strings.length == 3) {
-//                String filesUrl = "/api/v1/file/" + strings[1];
-//
-//                client = new HttpClientWrapper(strings[0]);
-//
-//                client.performBinaryHttpGet(filesUrl, new BinaryHttpResponseCallback() {
-//                    @Override
-//                    public void onHttpResponse(int status, InputStream input) {
-//                        Log.d("ListFileAsyncTask", "onHttpResponse: " + status);
-//
-//                        if (status == 200) {
-//                            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), strings[2]); // FIXME
-//
-//                            try {
-//                                FileOutputStream output = new FileOutputStream(file);
-//
-//                                byte[] buffer = new byte[1024 * 4];
-//                                int len;
-//
-//                                while ((len = input.read(buffer)) != -1) {
-//                                    output.write(buffer, 0, len);
-//                                }
-//
-//                                input.close();
-//                                output.close();
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//                    }
-//                    @Override
-//                    public void onException(Exception exception) {
-//                        if (exception instanceof HttpHostConnectException) {
-//                            Log.d("ListFileAsyncTask", "onException: " + exception.getMessage());
-//                        } else {
-//                            Log.d("ListFileAsyncTask", "onException", exception);
-//                        }
-//                    }
-//                });
-//            }
-//
-//            return null;
-//        }
-//
-//        @Override
-//        protected void onPostExecute(Void aVoid) {
-//            Log.d("ListFileAsyncTask", "onPostExecute");
-//
-//            toolbarProgressbar.setVisibility(View.GONE);
-//
-//            if (results != null) {
-//                updateDataSet(results);
-//            }
-//        }
-//    }
 
     public interface PeerFilesFragmentListener {
         void onDownloadImageClick(FileEntity file, String host);

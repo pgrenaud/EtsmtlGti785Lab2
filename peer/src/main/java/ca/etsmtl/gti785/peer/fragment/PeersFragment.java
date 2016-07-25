@@ -6,12 +6,10 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.gson.Gson;
 import com.pgrenaud.android.p2p.entity.PeerEntity;
 import com.pgrenaud.android.p2p.repository.PeerRepository;
 
@@ -77,10 +75,6 @@ public class PeersFragment extends Fragment {
                     if (listener != null) {
                         listener.onPeerEntityDismiss(holder.peer);
                     }
-
-                    // FIXME
-//                    peers.remove(holder.peer);
-//                    adapter.notifyDataSetChanged();
                 }
             };
             ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
@@ -103,11 +97,7 @@ public class PeersFragment extends Fragment {
 
         Collections.sort(peers);
 
-        Gson gson = new Gson();
-        Log.d("PeersFragment", "updateDataSet: " + gson.toJson(peers));
-
         if (adapter != null) {
-            Log.d("PeersFragment", "updateDataSet: updating");
             adapter.notifyDataSetChanged();
         }
     }
