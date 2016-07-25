@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity
     private static final int PERMISSIONS_REQUEST_CODE = 456;
 
     private PeerService service;
+    private Intent nfcIntent;
 
     private RelativeLayout contentLayout;
     private FloatingActionButton addFab;
@@ -92,6 +93,9 @@ public class MainActivity extends AppCompatActivity
             service = binder.getService();
             service.setListener(listener);
 
+            service.registerNfcCallback(getActivity());
+            service.handleNfcIntent(nfcIntent);
+
             // TODO: Check if path has changed while we were gone.
             // TODO: Same for the name
 
@@ -109,6 +113,8 @@ public class MainActivity extends AppCompatActivity
             Log.d("MainActivity", "onServiceDisconnected");
 
             service.setListener(null);
+
+            service.unregisterNfcCallback(getActivity());
 
             bound = false;
         }
@@ -261,6 +267,25 @@ public class MainActivity extends AppCompatActivity
             Intent intent = new Intent(this, PeerService.class);
             bindService(intent, connection, Context.BIND_AUTO_CREATE);
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        Log.d("MainActivity", "onNewIntent");
+
+        // onResume gets called after this to handle the intent
+        setIntent(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Log.d("MainActivity", "onResume");
+
+        nfcIntent = getIntent();
     }
 
     @Override
