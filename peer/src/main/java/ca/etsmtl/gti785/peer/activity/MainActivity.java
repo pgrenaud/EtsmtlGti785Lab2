@@ -3,6 +3,9 @@ package ca.etsmtl.gti785.peer.activity;
 import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -64,13 +67,14 @@ import ca.etsmtl.gti785.peer.util.UriUtil;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, PeerFilesFragmentListener, PeersFragmentListener {
 
+    private static final String EXTRA_PEER_UUID = "ca.etsmtl.gti785.peer.activity.PEER_UUID";
     private static final int DIRECTORY_REQUEST_CODE = 123;
     private static final int PERMISSIONS_REQUEST_CODE = 456;
     private static final long LOCATION_MIN_TIME_INTERVAL = 30 * 1000;
 
     private LocationManager locationManager;
     private PeerService service;
-    private Intent nfcIntent;
+    private Intent resumeIntent;
 
     private RelativeLayout contentLayout;
     private FloatingActionButton addFab;
@@ -100,7 +104,7 @@ public class MainActivity extends AppCompatActivity
             service.setListener(listener);
 
             service.registerNfcCallback(getActivity());
-            service.handleNfcIntent(nfcIntent);
+            service.handleNfcIntent(resumeIntent);
 
             // TODO: Check if path has changed while we were gone.
             // TODO: Same for the name
@@ -111,6 +115,21 @@ public class MainActivity extends AppCompatActivity
 
             service.getPeerHive().sync();
 
+            Bundle extras = resumeIntent.getExtras();
+            if (extras != null) {
+                if (extras.containsKey(EXTRA_PEER_UUID)) {
+                    resumeIntent.removeExtra(EXTRA_PEER_UUID);
+
+                    UUID uuid = UUID.fromString(extras.getString(EXTRA_PEER_UUID));
+                    PeerEntity peer = service.getPeerRepository().get(uuid);
+
+                    if (peer != null) {
+                        onPeerEntityClick(peer);
+                    }
+                }
+            }
+
+            resumeIntent = null;
             bound = true;
         }
 
@@ -158,6 +177,30 @@ public class MainActivity extends AppCompatActivity
                     peersFragment.updateDataSet(service.getPeerRepository());
                 }
             });
+        }
+
+        @Override
+        public void onPeerDirectoryChange(PeerEntity peerEntity) {
+            Log.d("MainActivity", "onPeerDirectoryChange");
+
+            Intent resultIntent = new Intent(getActivity(), MainActivity.class);
+            resultIntent.putExtra(EXTRA_PEER_UUID, peerEntity.getUUID().toString());
+
+            PendingIntent resultPendingIntent = PendingIntent.getActivity(getActivity(), 0, resultIntent, PendingIntent.FLAG_ONE_SHOT);
+
+            Notification notification = new Notification.Builder(getActivity())
+                    .setSmallIcon(R.drawable.ic_create_new_folder_white_24dp)
+                    .setColor(getResources().getColor(R.color.colorAccent))
+                    .setContentTitle(peerEntity.getDisplayName())
+                    .setContentText(getString(R.string.notification_files_available))
+                    .setPriority(Notification.PRIORITY_HIGH)
+                    .setVibrate(new long[]{0, 100, 100, 100})
+                    .setAutoCancel(true)
+                    .setContentIntent(resultPendingIntent)
+                    .build();
+
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.notify(0, notification);
         }
     };
 
@@ -328,7 +371,7 @@ public class MainActivity extends AppCompatActivity
 
         Log.d("MainActivity", "onResume");
 
-        nfcIntent = getIntent();
+        resumeIntent = getIntent();
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_MIN_TIME_INTERVAL, 0, locationListener);
@@ -461,8 +504,11 @@ public class MainActivity extends AppCompatActivity
                     if (service == null) {
                         Snackbar.make(contentLayout, R.string.snackbar_service_error, Snackbar.LENGTH_LONG).show();
                     } else {
+                        EventEntity event = new EventEntity(EventEntity.Type.DIRECTORY_CHANGE);
+
                         service.getFileRepository().removeAll();
                         service.getFileRepository().addAll(path);
+                        service.getQueueRepository().putAll(event);
 
                         filesFragment.updateDataSet(service.getFileRepository());
                     }

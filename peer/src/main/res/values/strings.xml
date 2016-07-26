@@ -15,6 +15,8 @@
     <string name="nav_files_title">File list</string>
     <string name="nav_peers_submenu_title">Connected Peers</string>
 
+    <string name="notification_files_available">New files are available to download</string>
+
     <string name="pref_server_directory_key">server_directory</string>
     <string name="pref_server_name_key">server_name</string>
 
