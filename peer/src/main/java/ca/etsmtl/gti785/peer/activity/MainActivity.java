@@ -9,6 +9,9 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -37,6 +40,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.pgrenaud.android.p2p.entity.EventEntity;
 import com.pgrenaud.android.p2p.entity.FileEntity;
+import com.pgrenaud.android.p2p.entity.LocationEntity;
 import com.pgrenaud.android.p2p.entity.PeerEntity;
 import com.pgrenaud.android.p2p.helper.ApiEndpoints;
 import com.pgrenaud.android.p2p.service.PeerService;
@@ -62,7 +66,9 @@ public class MainActivity extends AppCompatActivity
 
     private static final int DIRECTORY_REQUEST_CODE = 123;
     private static final int PERMISSIONS_REQUEST_CODE = 456;
+    private static final long LOCATION_MIN_TIME_INTERVAL = 30 * 1000;
 
+    private LocationManager locationManager;
     private PeerService service;
     private Intent nfcIntent;
 
@@ -155,6 +161,40 @@ public class MainActivity extends AppCompatActivity
         }
     };
 
+    LocationListener locationListener = new LocationListener() {
+        @Override
+        public void onLocationChanged(Location location) {
+            Log.d("MainActivity", "onLocationChanged");
+
+            if (service != null) {
+                LocationEntity locationEntity = new LocationEntity(location);
+
+                EventEntity event = new EventEntity(EventEntity.Type.LOCATION_UPDATE);
+                event.getParams().setLocation(locationEntity);
+
+                service.getSelfPeerEntity().getLocation().setLocation(locationEntity);
+                service.getQueueRepository().putAll(event);
+
+                peersFragment.updateDataSet(service.getSelfPeerEntity());
+            }
+        }
+
+        @Override
+        public void onStatusChanged(String s, int i, Bundle bundle) {
+            Log.d("MainActivity", "onStatusChanged");
+        }
+
+        @Override
+        public void onProviderEnabled(String s) {
+            Log.d("MainActivity", "onProviderEnabled");
+        }
+
+        @Override
+        public void onProviderDisabled(String s) {
+            Log.d("MainActivity", "onProviderDisabled");
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -181,6 +221,8 @@ public class MainActivity extends AppCompatActivity
 
             serverName = prefs.getString(getString(R.string.pref_server_name_key), getString(R.string.pref_server_name_default));
         }
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         // Used for displaying Snackbar
         contentLayout = (RelativeLayout) findViewById(R.id.main_content_layout);
@@ -261,8 +303,9 @@ public class MainActivity extends AppCompatActivity
     protected void onStart() {
         super.onStart();
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_CODE);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSIONS_REQUEST_CODE);
         } else {
             Intent intent = new Intent(this, PeerService.class);
             bindService(intent, connection, Context.BIND_AUTO_CREATE);
@@ -286,6 +329,21 @@ public class MainActivity extends AppCompatActivity
         Log.d("MainActivity", "onResume");
 
         nfcIntent = getIntent();
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_MIN_TIME_INTERVAL, 0, locationListener);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        Log.d("MainActivity", "onPause");
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.removeUpdates(locationListener);
+        }
     }
 
     @Override

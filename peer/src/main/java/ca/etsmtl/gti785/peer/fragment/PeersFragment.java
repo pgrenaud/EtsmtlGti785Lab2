@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.pgrenaud.android.p2p.entity.LocationEntity;
 import com.pgrenaud.android.p2p.entity.PeerEntity;
 import com.pgrenaud.android.p2p.repository.PeerRepository;
 
@@ -26,6 +27,7 @@ public class PeersFragment extends Fragment {
     private PeersFragmentListener listener;
 
     private List<PeerEntity> peers = new ArrayList<>();
+    private LocationEntity location = new LocationEntity();
     private PeersRecyclerViewAdapter adapter;
 
     public static PeersFragment newInstance() {
@@ -47,7 +49,7 @@ public class PeersFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        adapter = new PeersRecyclerViewAdapter(peers, listener);
+        adapter = new PeersRecyclerViewAdapter(peers, location, listener);
     }
 
     @Override
@@ -96,6 +98,14 @@ public class PeersFragment extends Fragment {
         peers.addAll(peerRepository.getAll());
 
         Collections.sort(peers);
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    public void updateDataSet(PeerEntity peerEntity) {
+        location.setLocation(peerEntity.getLocation());
 
         if (adapter != null) {
             adapter.notifyDataSetChanged();

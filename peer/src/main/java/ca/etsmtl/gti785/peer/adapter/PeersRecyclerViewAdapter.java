@@ -1,26 +1,31 @@
 package ca.etsmtl.gti785.peer.adapter;
 
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.pgrenaud.android.p2p.entity.LocationEntity;
 import com.pgrenaud.android.p2p.entity.PeerEntity;
 
 import ca.etsmtl.gti785.peer.R;
 import ca.etsmtl.gti785.peer.fragment.PeersFragment.PeersFragmentListener;
+import ca.etsmtl.gti785.peer.util.LocationUtil;
 
 import java.util.List;
 
 public class PeersRecyclerViewAdapter extends RecyclerView.Adapter<PeersRecyclerViewAdapter.ViewHolder> {
 
     private final List<PeerEntity> peers;
+    private final LocationEntity location;
     private final PeersFragmentListener listener;
 
-    public PeersRecyclerViewAdapter(List<PeerEntity> peers, PeersFragmentListener listener) {
+    public PeersRecyclerViewAdapter(List<PeerEntity> peers, LocationEntity location, PeersFragmentListener listener) {
         this.peers = peers;
+        this.location = location;
         this.listener = listener;
     }
 
@@ -37,13 +42,20 @@ public class PeersRecyclerViewAdapter extends RecyclerView.Adapter<PeersRecycler
         holder.titleText.setText(holder.peer.getDisplayName());
 
         if (holder.peer.getAccessedAt() == null) {
-            holder.dateText.setText("Never accessed"); // FIXME
+            holder.dateText.setText(R.string.peers_never_accessed);
         } else {
             holder.dateText.setText(holder.peer.getFormatedAccessedAt());
         }
 
         holder.addressText.setText(holder.peer.getHost());
-        holder.distanceText.setText("0m"); // FIXME
+
+        if (!location.hasLocation()) {
+            holder.distanceText.setText(R.string.peers_unknown_position);
+        } else if (!holder.peer.getLocation().hasLocation()) {
+            holder.distanceText.setText(R.string.peers_unknown_distance);
+        } else {
+            holder.distanceText.setText(LocationUtil.getPrintableDistance(location.distanceTo(holder.peer.getLocation())));
+        }
 
         if (holder.peer.isOnline()) {
             holder.statusImage.setImageResource(R.drawable.ic_brightness_1_green_500_18dp);

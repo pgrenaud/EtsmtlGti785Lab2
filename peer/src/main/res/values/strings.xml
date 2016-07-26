@@ -4,7 +4,6 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
-    <string name="action_settings">Settings</string>
     <string name="action_directory">Open a directory</string>
 
     <string name="activity_peers_title">Peers</string>
@@ -32,5 +31,7 @@
     <string name="server_peer_name">Peer is known as %s.</string>
     <string name="server_peer_status">Server listening on %1$s:%2$s.</string>
 
-
+    <string name="peers_never_accessed">Never accessed</string>
+    <string name="peers_unknown_position">Unknown position</string>
+    <string name="peers_unknown_distance">Unknown distance</string>
 </resources>
